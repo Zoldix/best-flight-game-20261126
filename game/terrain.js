@@ -75,9 +75,13 @@ const Terrain = (() => {
   }
   function colorAt(x,z,h,seedKey){
     const rd=Math.abs(x-riverX(z));
-    if (z>-5250 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
-    if (z>-5250 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
-    if (z>-5250 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
+    // v5: the painted water band is much narrower — the ribbon mesh below
+    // is the river; wide blue terrain faces read as angular shards in the
+    // foreground. The banks soften toward olive so the sand meets the
+    // grass without a hard stripe.
+    if (z>-5250 && rd<11 && Math.abs(x)<340 && h<4) return [0.11,0.40,0.78];       // river water (under the ribbon)
+    if (z>-5250 && rd<34 && Math.abs(x)<340 && h<6) return [0.66,0.57,0.40];       // inner bank
+    if (z>-5250 && rd<52 && Math.abs(x)<340 && h<8) return [0.55,0.52,0.36];       // outer bank, olive-sand
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
     if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
     if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
@@ -97,18 +101,24 @@ const Terrain = (() => {
     // The river is a ribbon mesh that follows the curve, bank under water, so
     // it reads as a winding river instead of painted squares.
     for(let z=300; z>-5250; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
-      const bank=[0.72,0.60,0.40], water=[0.12,0.42,0.80], wy=2.6;
+      const bank=[0.66,0.56,0.39], wy=2.6;
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
+      // v5 water: three lanes across the ribbon — deep on the shaded west
+      // side, bright on the east — with a per-segment brightness jitter so
+      // the surface shimmers instead of reading as one flat blue strip.
+      const j = 0.90 + hash(Math.round(z/40), 3)*0.20;
+      const deep=[0.09*j,0.32*j,0.68*j], mid=[0.13*j,0.46*j,0.86*j], lite=[0.17*j,0.53*j,0.93*j];
       if (z<=-4360){
-        // Sun glint on the foreground reach, built as the water's own
-        // middle lane (same plane, adjacent, never overlapping): a raised
-        // overlay lane drifted off the water wherever the river bends
-        // sharply and striped the bank instead (round 4 fix).
-        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-5,wy,z-40],[cx-5,wy,z],water);
-        b.quad([cx-5,wy,z],[cx2-5,wy,z-40],[cx2+5,wy,z-40],[cx+5,wy,z],[1.0,0.78,0.42]);
-        b.quad([cx+5,wy,z],[cx2+5,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
+        // Foreground reach: the sun's reflection is a narrow gold lane on
+        // the western third (the sun sits north-west), not a wide stripe
+        // down the middle.
+        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-6,wy,z-40],[cx-6,wy,z],deep);
+        b.quad([cx-6,wy,z],[cx2-6,wy,z-40],[cx2+1,wy,z-40],[cx+1,wy,z],[1.0,0.82,0.52]);
+        b.quad([cx+1,wy,z],[cx2+1,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],mid);
       } else {
-        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
+        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-5,wy,z-40],[cx-5,wy,z],deep);
+        b.quad([cx-5,wy,z],[cx2-5,wy,z-40],[cx2+5,wy,z-40],[cx+5,wy,z],mid);
+        b.quad([cx+5,wy,z],[cx2+5,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],lite);
       }
     }
     // The far reach, beyond the runway's far end (v2: wider and a brighter
