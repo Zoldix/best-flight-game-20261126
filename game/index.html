@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valley Survey — Ring Run &amp; Runway</title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<canvas id="gl" width="1280" height="720"></canvas>
+<div id="hud">
+  <div class="panel" id="mission-panel">
+    <div class="ptitle">MISSION</div>
+    <div id="mission">VALLEY SURVEY — RING 1 / 6</div>
+    <div id="ringinfo">NEXT RING — M AHEAD</div>
+    <div id="distinfo">RUNWAY — M NORTH</div>
+    <div id="callout">FOLLOW THE GREEN RING</div>
+    <div class="legend">LEGEND: green ring = next · gold = later · land &lt;46 KT</div>
+  </div>
+  <div class="panel" id="left-panel">
+    <div class="label">ALTITUDE</div><div class="big" id="alt">0 FT</div>
+    <div class="label">VERT SPEED</div><div class="mid" id="vspeed">+0 FPM</div>
+  </div>
+  <div class="panel" id="right-panel">
+    <div class="label">AIRSPEED</div><div class="big" id="spd">0 KT</div>
+    <div class="label">HEADING</div><div class="big" id="hdg">000°</div>
+  </div>
+  <div class="panel" id="sys-panel">
+    <div class="row"><span>THROTTLE <b id="thrval">0%</b></span><div class="bar"><div id="thrbar"></div></div></div>
+    <div class="row"><span>FUEL <b id="fuelpct">100%</b></span><div class="bar"><div id="fuelbar"></div></div></div>
+    <div class="row"><span>DAMAGE <b id="dmgpct">0%</b></span><div class="bar"><div id="dmgbar"></div></div></div>
+    <div id="gearmsg">GEAR DOWN · FLAPS CRUISE</div>
+  </div>
+  <div class="panel" id="horizon-panel">
+    <div class="label center">ATTITUDE</div>
+    <canvas id="horizon" width="220" height="140"></canvas>
+    <div class="controls">W/↑ climb · S/↓ dive · A D bank · SHIFT/C throttle · mouse steers</div>
+  </div>
+  <div id="flash"></div>
+</div>
+<div id="title-screen" class="screen">
+  <h1>VALLEY SURVEY</h1>
+  <p class="sub">6 RINGS · 1 RUNWAY · ONE TANK OF FUEL</p>
+  <p class="brief">Thread the survey rings down the green valley, mind your fuel and
+  airframe, then put her down on the north strip under 46 knots.</p>
+  <button id="start-btn">▶ START SORTIE — ENTER</button>
+  <p class="keys">W/↑ climb · S/↓ dive · A/D bank · SHIFT throttle up · C throttle down · mouse steers</p>
+</div>
+<div id="end-screen" class="screen" style="display:none">
+  <h1 id="end-title">SORTIE RESULTS</h1>
+  <div id="end-stats"></div>
+  <p class="keys">Press R to fly again</p>
+</div>
+<script src="render.js"></script>
+<script src="terrain.js"></script>
+<script src="aircraft.js"></script>
+<script src="missions.js"></script>
+<script src="fuel.js"></script>
+<script src="damage.js"></script>
+<script src="camera.js"></script>
+<script src="audio.js"></script>
+<script src="instruments.js"></script>
+<script src="main.js"></script>
+</body></html>

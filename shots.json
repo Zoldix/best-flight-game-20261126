@@ -1,0 +1,6 @@
+[
+  { "name": "1-cover.png", "query": "?scene=cover&manual=1&seed=20261126" },
+  { "name": "2-runway.png", "query": "?scene=runway&manual=1&seed=20261126" },
+  { "name": "3-results.png", "query": "?scene=results&manual=1&seed=20261126" },
+  { "name": "4-title.png", "query": "?scene=title&manual=1&seed=20261126" }
+]
