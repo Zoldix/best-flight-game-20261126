@@ -192,14 +192,25 @@ function applyPreset(name){
     Camera.setDist(22); // posed wide for the screenshot: the plane reads
     // smaller against the valley than in the v1 frame (presets are posing
     // only; a real sortie always starts at the default chase distance)
-    plane.pos=[-350,120,-2350]; plane.heading=0.35; plane.pitch=-0.03; plane.speed=58; plane.throttle=0.5;
+    // v3: the run-in starts south-east of the fire with the nose pointed at
+    // it (heading -0.36 from (-322,-2272) bears on the fire at (-430,-2550),
+    // ~300 m out), so the flame cones and smoke column sit dead ahead in the
+    // frame instead of clipped at its left edge as in the v2 shot.
+    plane.pos=[-322,110,-2272]; plane.heading=-0.36; plane.pitch=-0.04; plane.speed=58; plane.throttle=0.5;
     Fuel.set(61); Damage.set(4); screen='fly'; }
   else if (name==='medevac'){ Missions.select('medevac'); Missions.state.stage='deliver'; Missions.state.patient=true;
     Missions.state.timeLeft=142;
-    // v2: on short final, offset west of the pad centreline so the hospital
-    // pad and its white cross show beside the plane, not hidden behind it.
-    plane.pos=[122,50,-5338]; plane.heading=0.10; plane.pitch=-0.10; plane.speed=42; plane.throttle=0.3;
-    plane.roll=0.38; // banked onto final: the tilt uncovers the pad beside the fuselage
+    // v3: the v2 pose sat 60 m out at the default chase distance, so the
+    // plane filled the frame and the pad never read; a long shallow final
+    // foreshortens the flat disc into a sliver. Pose a steep turning
+    // final instead: ~130 m out, banked toward the pad, high enough that
+    // the disc opens into an ellipse and the white circle + cross read
+    // below the airframe. The shot recipe steps 0 ticks — the medevac
+    // clock is derived from ticks flown, so stepping would reset the
+    // posed 2:22 back to a full 5:00.
+    Camera.setDist(24);
+    plane.pos=[190,92,-5295]; plane.heading=-0.365; plane.pitch=-0.12; plane.speed=44; plane.throttle=0.3;
+    plane.roll=0.35; // banked onto final: the tilt uncovers the pad beside the fuselage
     Fuel.set(47); Damage.set(12); screen='fly'; }
   Camera.reset(plane.pos); showScreen();
 }

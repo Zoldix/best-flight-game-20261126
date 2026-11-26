@@ -191,6 +191,13 @@ const Terrain = (() => {
       const gy=heightAt(cx,cz), SEG2=20;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([cx,gy+0.3,cz],[cx+Math.cos(a1)*40,gy+0.3,cz+Math.sin(a1)*40],[cx+Math.cos(a2)*40,gy+0.3,cz+Math.sin(a2)*40],[0.13,0.14,0.17]); }
+      // v3: a white rim ring on the disc's edge, the standard helipad
+      // circle marking — the dark disc alone melts into the valley green
+      // at chase distance, and the ring is what lets the pad read as a
+      // target in a screenshot instead of a stray cross arm.
+      for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
+        b.quad([cx+Math.cos(a1)*35.5,gy+0.38,cz+Math.sin(a1)*35.5],[cx+Math.cos(a2)*35.5,gy+0.38,cz+Math.sin(a2)*35.5],
+               [cx+Math.cos(a2)*40,gy+0.38,cz+Math.sin(a2)*40],[cx+Math.cos(a1)*40,gy+0.38,cz+Math.sin(a1)*40],[0.95,0.95,0.92]); }
       b.quad([cx-4.5,gy+0.45,cz-20],[cx-4.5,gy+0.45,cz+20],[cx+4.5,gy+0.45,cz+20],[cx+4.5,gy+0.45,cz-20],[0.95,0.95,0.92]);
       b.quad([cx-20,gy+0.45,cz-4.5],[cx-20,gy+0.45,cz+4.5],[cx+20,gy+0.45,cz+4.5],[cx+20,gy+0.45,cz-4.5],[0.95,0.95,0.92]);
       for(const [ox,oz] of [[-36,-36],[36,-36],[-36,36],[36,36]]) b.box(cx+ox,gy+1.2,cz+oz,2.6,2.6,2.6,[1.0,0.80,0.30]);
