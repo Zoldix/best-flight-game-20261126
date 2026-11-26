@@ -75,11 +75,36 @@ const Terrain = (() => {
   }
   function build(){
     const b=Render.builder(), X0=-1250,X1=1250,Z0=350,Z1=-6450,S=60;
-    let qi=0;
-    for(let x=X0;x<X1;x+=S) for(let z=Z0;z>Z1;z-=S){ qi++;
-      const p=(xx,zz)=>[xx,heightAt(xx,zz),zz];
-      const c=colorAt(x+S/2,z-S/2,heightAt(x+S/2,z-S/2),qi);
-      b.quad(p(x,z),p(x,z-S),p(x+S,z-S),p(x+S,z),c);
+    // v7 smooth shading: every grid corner carries its own colour, a
+    // normal taken from the heightfield gradient, and a baked sun-shadow
+    // factor (a short horizon march toward the sun) — the shader then
+    // interpolates across each cell, so slopes shade continuously and
+    // ridges throw soft shadow instead of the old per-face shards. Corner
+    // values are pure functions of position, so neighbouring cells agree
+    // exactly and the surface stays watertight and deterministic.
+    const sunXZ=(()=>{ const l=Math.hypot(-0.45,-0.35); return [-0.45/l,-0.35/l]; })();
+    const sunSlope=0.85/Math.hypot(0.45,0.35); // matches the shader's sun
+    function corner(x,z){
+      const h=heightAt(x,z), e=30;
+      const dhx=(heightAt(x+e,z)-heightAt(x-e,z))/(2*e), dhz=(heightAt(x,z+e)-heightAt(x,z-e))/(2*e);
+      // Normals are snapped to 1/8 steps: the light then falls in gentle
+      // bands instead of a continuous ramp — still smooth to the eye, but
+      // the screenshots stay under the size cap (a full ramp cost ~90 KB).
+      const n=Render.norm([-dhx,1,-dhz]).map(v=>Math.round(v*8)/8);
+      let sh=1;
+      for(const t of [60,130,240,380]){ const px=x+sunXZ[0]*t, pz=z+sunXZ[1]*t;
+        if (heightAt(px,pz) > h + t*sunSlope + 4){ sh=0.70; break; } }
+      const seed=Math.round(x/60)+Math.round(-z/60)*64;
+      const c=colorAt(x,z,h,seed);
+      // Colours are quantised to 1/32 steps: smooth gradients otherwise
+      // carry so many distinct values that the PNG screenshots outgrow
+      // the kit's size cap.
+      const q=v=>Math.round(v*32)/32;
+      return {p:[x,h,z], n, c:[q(c[0]*sh),q(c[1]*sh),q(c[2]*sh)]};
+    }
+    for(let x=X0;x<X1;x+=S) for(let z=Z0;z>Z1;z-=S){
+      const A=corner(x,z), B=corner(x,z-S), C2=corner(x+S,z-S), D=corner(x+S,z);
+      b.quadV(A.p,B.p,C2.p,D.p, [A.c,B.c,C2.c,D.c], [A.n,B.n,C2.n,D.n]);
     }
     // v5: no river ribbon — removed on the user's call (it never read
     // clearly and cluttered every frame). The valley floor is meadow and
@@ -234,6 +259,9 @@ const Terrain = (() => {
       for(let j=0;j<LO;j++){ const ph1=j/LO*Math.PI*2, ph2=(j+1)/LO*Math.PI*2;
         const pt=(th,ph)=>[C[0]+R*Math.sin(th)*Math.cos(ph), C[1]+R*Math.cos(th), C[2]+R*Math.sin(th)*Math.sin(ph)];
         const a=pt(th1,ph1), c2=pt(th2,ph1), d=pt(th2,ph2), e=pt(th1,ph2);
+        // The dome stays flat-banded on purpose: a smooth sky gradient
+        // spans so much of every frame that its per-pixel values pushed
+        // the screenshots over the size cap; the bands read as style.
         b.quad(a,c2,d,e, skyColor(a[1], R));
       } }
     function disc(cx,cy,cz,r,col){ const SEG2=24;

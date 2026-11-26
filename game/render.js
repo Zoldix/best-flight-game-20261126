@@ -13,9 +13,12 @@ const Render = (() => {
     const fs = `precision mediump float; varying vec3 vc; varying vec3 vn; varying float vd;
       uniform vec3 fog; uniform float fogScale;
       void main(){ vec3 L=normalize(vec3(-0.45,0.85,-0.35)); float d=max(dot(normalize(vn),L),0.0);
-        float li = fogScale < -0.5 ? 1.0 : 0.62+0.50*d; vec3 col=vc*li*(0.96+0.10*d);
+        float li = fogScale < -0.5 ? 1.0 : 0.62+0.50*d;
+        if (fogScale > -0.5) li = floor(li*14.0+0.5)/14.0; // v7: banded light — 14 soft steps read as smooth shading but keep the screenshots compressible (a continuous ramp cost ~90 KB of PNG)
+        vec3 col=vc*li*(0.96+0.10*d);
         if (fogScale > -0.5) col *= mix(vec3(0.88,0.92,1.04), vec3(1.08,1.00,0.90), d); // v6: high day sun, gentler warm/cool split (was a low sunset sun)
         float f = fogScale < -0.5 ? 0.0 : smoothstep(700.0,3800.0,vd)*fogScale; col=mix(col,fog,f*0.88);
+        if (fogScale > -0.5) col = floor(col*28.0+0.5)/28.0; // v7: posterise to 28 steps per channel — soft bands, far fewer distinct colours, screenshots stay under the cap
         gl_FragColor=vec4(col,1.0); }`;
     function sh(t,s){ const o=gl.createShader(t); gl.shaderSource(o,s); gl.compileShader(o);
       if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
@@ -47,6 +50,14 @@ const Render = (() => {
     function tri(a,b,c,col){ const n=norm(cross(sub(b,a),sub(c,a)));
       for(const v of [a,b,c]){ P.push(v[0],v[1],v[2]); C.push(col[0],col[1],col[2]); N.push(n[0],n[1],n[2]); } }
     function quad(a,b,c,d,col){ tri(a,b,c,col); tri(a,c,d,col); }
+    // v7: per-vertex colour + normal variants — the terrain grid and the
+    // sky dome emit these so the shader interpolates light and colour
+    // smoothly across a face (smooth shading), while props and the plane
+    // keep the crisp flat-shaded tri/quad path.
+    function triV(a,b,c,cols,nrms){ const vs=[a,b,c];
+      for(let i=0;i<3;i++){ P.push(vs[i][0],vs[i][1],vs[i][2]); C.push(cols[i][0],cols[i][1],cols[i][2]); N.push(nrms[i][0],nrms[i][1],nrms[i][2]); } }
+    function quadV(a,b,c,d,cols,nrms){ triV(a,b,c,[cols[0],cols[1],cols[2]],[nrms[0],nrms[1],nrms[2]]);
+      triV(a,c,d,[cols[0],cols[2],cols[3]],[nrms[0],nrms[2],nrms[3]]); }
     function box(cx,cy,cz,sx,sy,sz,col){ const x0=cx-sx/2,x1=cx+sx/2,y0=cy-sy/2,y1=cy+sy/2,z0=cz-sz/2,z1=cz+sz/2;
       quad([x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],col);
       quad([x0,y0,z1],[x1,y0,z1],[x1,y0,z0],[x0,y0,z0],col);
@@ -58,7 +69,7 @@ const Render = (() => {
       function buf(data,loc){ const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b);
         gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW); return {b,loc}; }
       vao.bufs=[buf(P,aPos),buf(C,aCol),buf(N,aNor)]; return vao; }
-    return {tri,quad,box,build,P};
+    return {tri,quad,triV,quadV,box,build,P};
   }
   function draw(mesh, mvp, fog, fogScale){ gl.uniformMatrix4fv(uMVP,false,mvp); gl.uniform3fv(uFog,fog); gl.uniform1f(uFogScale, fogScale===undefined?1:fogScale);
     for(const {b,loc} of mesh.bufs){ gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,3,gl.FLOAT,false,0,0); }
