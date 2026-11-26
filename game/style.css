@@ -13,6 +13,8 @@
 .label{font-size:13px;letter-spacing:2px;color:#8fd0ff}
 .big{font-size:36px;font-weight:bold;line-height:1.05}
 .mid{font-size:22px;font-weight:bold}
+#map-panel{top:288px;right:14px;text-align:center;padding:8px}
+#minimap{display:block;margin-top:4px;border-radius:6px}
 #sys-panel{bottom:14px;left:14px;width:330px;font-size:16px}
 #sys-panel .row{margin:5px 0}
 .bar{height:15px;background:rgba(255,255,255,.16);border-radius:7px;overflow:hidden;margin-top:3px}

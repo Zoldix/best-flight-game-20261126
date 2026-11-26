@@ -1,5 +1,8 @@
-// terrain.js — sunset valley: gradient-shaded low-poly terrain, river, lake, trees,
-// runway with markings + numbers, and the sky (gradient dome, sun, clouds). Seeded only.
+// terrain.js — the sunset valley and everything in it: heightmap-noise mountains
+// around a bending valley axis, a ribbon river and a lake, trees, the marked
+// runway "27", and the sky (gradient dome, radial-gradient sun, clouds).
+// Everything is generated from seeded noise only, so the world is identical
+// on every run and the screenshots reproduce byte for byte.
 'use strict';
 const Terrain = (() => {
   const rng = makeRng(20261126);
@@ -10,12 +13,16 @@ const Terrain = (() => {
     const fx=gx-ix, fz=gz-iz, sx=fx*fx*(3-2*fx), sz=fz*fz*(3-2*fz);
     const a=hash(ix,iz), b=hash(ix+1,iz), c=hash(ix,iz+1), d=hash(ix+1,iz+1);
     return (a+(b-a)*sx+(c-a)*sz+(a-b-c+d)*sx*sz)*2-1; }
+  // The valley axis bends as it runs north; the bend fades out before the
+  // runway so the strip and its final approach stay straight and level.
   function valleyBend(z){ const f = z<-4600 ? Math.max(0, 1-(-z-4600)/500) : 1;
     return (150*Math.sin(z*0.00052)+80*Math.sin(z*0.00127+1.7)) * f; }
   function riverX(z){ return valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037); }
-  function river2X(z){ return 215 + 55*Math.sin(z*0.0021); }
+  function river2X(z){ return 215 + 55*Math.sin(z*0.0021); } // the far reach, beyond the runway
   function fbm(x,z){ return noise(x,z)*0.60 + noise(x*2.7,z*2.7)*0.28 + noise(x*6.3,z*6.3)*0.12; }
-  function runwayBlend(x,z){ const inX=Math.max(0,Math.min(1,(170-Math.abs(x))/70)), inZ=(z<-5030&&z>-5770)?1:0; return Math.min(inX,1)*inZ; } // full plateau |x|<100 so grid vertices sit at h=10 under the strip
+  // Full plateau |x|<100: every terrain grid vertex under the strip sits at
+  // exactly h=10, so the strip mesh and its markings are never buried.
+  function runwayBlend(x,z){ const inX=Math.max(0,Math.min(1,(170-Math.abs(x))/70)), inZ=(z<-5030&&z>-5770)?1:0; return Math.min(inX,1)*inZ; }
   function heightAt(x,z){
     const bx = x - valleyBend(z);
     const ax=Math.abs(bx);
@@ -27,14 +34,15 @@ const Terrain = (() => {
     h += Math.max(0,(-z-4300)/900)**2*35;
     if (z<-5650) h += Math.min(150, (-z-5650)/6) * (0.45+0.75*Math.max(0,fbm(x+900, z))); // broken, off-centre valley head
     const rd = Math.abs(x-riverX(z));
-    if (rd<46 && Math.abs(bx)<380 && z>-4900) h = Math.min(h, 1.5);
+    if (rd<46 && Math.abs(bx)<380 && z>-4900) h = Math.min(h, 1.5); // river channel
     const lake = ((x-230)/190)**2 + ((z+3750)/230)**2;
-    if (lake<1) h = Math.min(h, 2.0);
+    if (lake<1) h = Math.min(h, 2.0); // lake bed
     const rb = runwayBlend(x,z); if (rb>0) h = h*(1-rb)+10*rb;
     if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
     return h;
   }
-  // height-gradient palette in one sunset family: valley green -> olive -> warm rock -> slate -> warm snow
+  // Height-gradient palette in one sunset family:
+  // valley green -> olive -> warm rock -> slate -> warm snow.
   function mixc(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
   function palette(h){
     const stops=[[0,[0.12,0.36,0.14]],[30,[0.27,0.42,0.15]],[70,[0.38,0.29,0.22]],[130,[0.34,0.28,0.38]],[190,[0.95,0.85,0.76]]];
@@ -43,13 +51,13 @@ const Terrain = (() => {
   }
   function colorAt(x,z,h,seedKey){
     const rd=Math.abs(x-riverX(z));
-    if (z>-4900 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // water surface (narrow)
-    if (z>-4900 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // sandy bank
-    if (z>-4900 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];        // sandy bank
+    if (z>-4900 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
+    if (z>-4900 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
+    if (z>-4900 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
     if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
     if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
-    if (runwayBlend(x,z)>0.6) return [0.52,0.50,0.48];
+    if (runwayBlend(x,z)>0.6) return [0.52,0.50,0.48];                               // airfield apron
     let c = palette(h);
     const v = 0.90 + hash(seedKey, seedKey*3)*0.20;                                   // per-face variation
     return [c[0]*v, c[1]*v, c[2]*v];
@@ -62,20 +70,24 @@ const Terrain = (() => {
       const c=colorAt(x+S/2,z-S/2,heightAt(x+S/2,z-S/2),qi);
       b.quad(p(x,z),p(x,z-S),p(x+S,z-S),p(x+S,z),c);
     }
-    // river: a ribbon that follows the river curve, so it reads as a river, not painted squares
+    // The river is a ribbon mesh that follows the curve, bank under water, so
+    // it reads as a winding river instead of painted squares.
     for(let z=300; z>-4860; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
       const bank=[0.72,0.60,0.40], water=[0.12,0.42,0.80], wy=2.6;
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
       b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
     }
+    // The far reach, beyond the runway's far end.
     for(let z=-5780; z>-6140; z-=40){ const cx=river2X(z), cx2=river2X(z-40);
       b.quad([cx-26,2.1,z],[cx2-26,2.1,z-40],[cx2+26,2.1,z-40],[cx+26,2.1,z],[0.72,0.60,0.40]);
       b.quad([cx-15,2.6,z],[cx2-15,2.6,z-40],[cx2+15,2.6,z-40],[cx+15,2.6,z],[0.12,0.42,0.80]); }
-    // lake: flat disc + shore ring at the lake centre
+    // Lake: flat disc + shore ring at the lake centre.
     { const lx=230, lz=-3750, SEG2=22;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([lx,2.6,lz],[lx+Math.cos(a1)*205,2.1,lz+Math.sin(a1)*245],[lx+Math.cos(a2)*205,2.1,lz+Math.sin(a2)*245],[0.74,0.62,0.42]);
         b.tri([lx,2.7,lz],[lx+Math.cos(a1)*168,2.7,lz+Math.sin(a1)*200],[lx+Math.cos(a2)*168,2.7,lz+Math.sin(a2)*200],[0.12,0.44,0.82]); } }
+    // Trees: trunk + two crossed conifer triangles, kept out of the river and
+    // off the airfield plateau.
     const tr=makeRng(777);
     for(let i=0;i<190;i++){ const x=(tr()*2-1)*300, z=200-tr()*5600;
       if (Math.abs(x-riverX(z))<60 || runwayBlend(x,z)>0) continue;
@@ -92,14 +104,15 @@ const Terrain = (() => {
     b.quad([25,my,-5080],[25,my,-5720],[29,my,-5720],[29,my,-5080],W);
     // centreline: long wide dashes
     for(let z=-5260; z>-5660; z-=92) b.quad([-3.5,my,z],[-3.5,my,z-58],[3.5,my,z-58],[3.5,my,z],W);
-    // threshold: 6 big piano bars
+    // threshold: six big piano bars
     for(let i=0;i<6;i++){ const x0=-26+i*9.4;
       b.quad([x0,my,-5092],[x0,my,-5158],[x0+5.4,my,-5158],[x0+5.4,my,-5092],W); }
     // touchdown-zone bar pairs
     for(const zz of [-5330,-5450]) for(const sx of [-1,1])
       b.quad([sx*10-2.5,my,zz],[sx*10-2.5,my,zz-42],[sx*10+2.5,my,zz-42],[sx*10+2.5,my,zz],W);
+    // amber edge lights
     for(let z=-5120; z>-5700; z-=95){ b.box(-33,11.6,z,2.4,2.4,2.4,[1.0,0.80,0.30]); b.box(33,11.6,z,2.4,2.4,2.4,[1.0,0.80,0.30]); }
-    // seven-segment style digits, flat on the strip
+    // Runway numbers as seven-segment style digits, flat on the strip.
     const SEG={ '2':[1,1,0,1,1,0,1], '7':[1,1,1,0,0,0,0] };
     function digit(ch, ox, oz){ const w=26, hh=46, th=7, y=my+0.02, col=[0.97,0.95,0.90], s=SEG[ch];
       const seg=(x0,z0,x1,z1)=>b.quad([ox+x0,y,oz+z0],[ox+x0,y,oz+z1],[ox+x1,y,oz+z1],[ox+x1,y,oz+z0],col);
@@ -108,7 +121,7 @@ const Terrain = (() => {
     digit('2', -29, -5245); digit('7', 4, -5245);
     return b.build();
   }
-  // ---- sky: gradient dome + sun disc/halo + clouds, one sunset palette ----
+  // ---- sky: gradient dome + radial-gradient sun + clouds, one sunset palette ----
   function skyColor(y, R){
     const t=Math.max(0,Math.min(1, y/R*0.5+0.5));
     const stops=[[0.42,[1.00,0.60,0.34]],[0.55,[0.94,0.52,0.50]],[0.75,[0.42,0.36,0.64]],[1.0,[0.13,0.16,0.38]]];
@@ -119,27 +132,30 @@ const Terrain = (() => {
     const b=Render.builder(), C=[0,0,-2700], R=3800, LA=26, LO=22;
     for(let i=0;i<LA;i++){ const th1=i/LA*Math.PI, th2=(i+1)/LA*Math.PI;
       for(let j=0;j<LO;j++){ const ph1=j/LO*Math.PI*2, ph2=(j+1)/LO*Math.PI*2;
-        const pt=(th,ph)=>{ const v=[C[0]+R*Math.sin(th)*Math.cos(ph), C[1]+R*Math.cos(th), C[2]+R*Math.sin(th)*Math.sin(ph)]; return v; };
+        const pt=(th,ph)=>[C[0]+R*Math.sin(th)*Math.cos(ph), C[1]+R*Math.cos(th), C[2]+R*Math.sin(th)*Math.sin(ph)];
         const a=pt(th1,ph1), c2=pt(th2,ph1), d=pt(th2,ph2), e=pt(th1,ph2);
-        const col=skyColor(a[1], R);
-        b.quad(a,c2,d,e,col);
+        b.quad(a,c2,d,e, skyColor(a[1], R));
       } }
-    // sun: halo disc + bright disc, ahead-left where the chase camera looks (north-west)
     function disc(cx,cy,cz,r,col){ const SEG2=24;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([cx,cy,cz],[cx+Math.cos(a1)*r,cy+Math.sin(a1)*r,cz],[cx+Math.cos(a2)*r,cy+Math.sin(a2)*r,cz],col); } }
-    { // radial-gradient sun: concentric layers lerp from the horizon sky colour to a pale core
-      const layers=[[430,[0.93,0.56,0.47]],[375,[0.96,0.58,0.42]],[325,[0.99,0.60,0.37]],[278,[1.02,0.63,0.33]],
+    // The sun is a radial gradient built from concentric discs: the outermost
+    // layer is the horizon sky colour, so the glow melts into the dome, and
+    // each inner layer steps toward the pale core. All layers sit inside the
+    // dome's north wall, or the dome would swallow them.
+    { const layers=[[430,[0.93,0.56,0.47]],[375,[0.96,0.58,0.42]],[325,[0.99,0.60,0.37]],[278,[1.02,0.63,0.33]],
                     [235,[1.04,0.67,0.33]],[198,[1.03,0.73,0.40]],[163,[1.02,0.80,0.50]],[132,[1.00,0.88,0.63]]];
       layers.forEach(([r,c],i)=> disc(-520,800,-5965+i*3, r, c)); }
-    // clouds: flattened box clusters, lit tops / shaded undersides
+    // Clouds: clusters of small boxes with bumpier undersides, lit tops and
+    // shaded bottoms in the same pink family as the sky.
     const cr=makeRng(4242);
     for(let i=0;i<15;i++){ const cx=(cr()*2-1)*2300, cy=560+cr()*260, cz=-600-cr()*5600, s=60+cr()*70;
       if (Math.hypot(cx+520, cz+5950)<900) continue; // keep the sun clear
       const top=[0.99,0.80,0.74], under=[0.74,0.52,0.60];
       for(let k=0;k<6;k++){ const ox=(cr()*2-1)*s*0.8, oz=(cr()*2-1)*s*0.35, oy=(cr()*0.6)*20, w=45+cr()*55;
         b.box(cx+ox,cy+oy,cz+oz, w,26+cr()*20,w*0.7, k%2? top: under); } }
-    // hero clouds: placed in the northern view corridor so the cover frame actually contains clouds
+    // Hero clouds placed in the northern view corridor, so the screenshots
+    // that matter actually contain clouds.
     const hero=[[-380,430,-5650],[430,505,-6000],[-60,395,-5300],[150,470,-5550]];
     for(const [hx,hy,hz] of hero){ const hr=makeRng(Math.abs(hx)+Math.abs(hz));
       for(let k=0;k<7;k++){ const ox=(hr()*2-1)*55, oz=(hr()*2-1)*22, oy=(hr()*2-1)*17, w=36+hr()*48;

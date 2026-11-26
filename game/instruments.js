@@ -1,4 +1,7 @@
-// instruments.js — HUD: big readouts, bars, compass, artificial horizon canvas, mission panel.
+// instruments.js — the HUD: big altitude / airspeed / heading readouts,
+// vertical speed, throttle / fuel / damage bars, the mission panel with its
+// next-ring callout, an artificial-horizon canvas, and a north-up minimap
+// that tracks the plane, the rings, the river and the runway.
 'use strict';
 const Instruments = (() => {
   const el = {};
@@ -6,6 +9,7 @@ const Instruments = (() => {
     for (const id of ['alt','spd','hdg','thrbar','fuelbar','dmgbar','fuelpct','dmgpct','thrval',
       'mission','ringinfo','distinfo','callout','vspeed','gearmsg']) el[id]=document.getElementById(id);
     el.horizon = document.getElementById('horizon').getContext('2d');
+    el.map = document.getElementById('minimap').getContext('2d');
   }
   function bar(node, pct, color){ node.style.width=Math.max(0,Math.min(100,pct))+'%'; node.style.background=color; }
   function update(plane, tick){
@@ -31,6 +35,7 @@ const Instruments = (() => {
       el.distinfo.textContent='RUNWAY '+Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)))+' M — SLOW TO <46 KT';
       el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
     drawHorizon(plane);
+    drawMinimap(plane);
   }
   function drawHorizon(plane){
     const c=el.horizon, W=220,H=140; c.save(); c.clearRect(0,0,W,H);
@@ -47,6 +52,35 @@ const Instruments = (() => {
     c.strokeStyle='#ffd23f'; c.lineWidth=4; c.beginPath();
     c.moveTo(W/2-38,H/2); c.lineTo(W/2-10,H/2); c.lineTo(W/2,H/2+8); c.lineTo(W/2+10,H/2); c.lineTo(W/2+38,H/2); c.stroke();
     c.fillStyle='#ffd23f'; c.beginPath(); c.arc(W/2,H/2,3.5,0,Math.PI*2); c.fill();
+  }
+  // North-up minimap: the whole valley on 168x168 px. World x -1250..1250
+  // maps left..right, world z 350..-6450 maps bottom..top (north is up).
+  function drawMinimap(plane){
+    const c=el.map, S=168;
+    const mx=x=>(x+1250)/2500*S, mz=z=>(350-z)/6800*S;
+    c.clearRect(0,0,S,S);
+    c.fillStyle='#0d2b1d'; c.fillRect(0,0,S,S);
+    // river polyline, sampled from the same curve the terrain uses
+    c.strokeStyle='#3f9be0'; c.lineWidth=2.5; c.beginPath();
+    for(let z=300; z>=-4860; z-=180){ const px=mx(Terrain.riverX(z)), py=mz(z);
+      if (z===300) c.moveTo(px,py); else c.lineTo(px,py); }
+    c.stroke();
+    // lake
+    c.fillStyle='#3f9be0'; c.beginPath(); c.arc(mx(230),mz(-3750),9,0,Math.PI*2); c.fill();
+    // runway: a white slot near the north end
+    c.fillStyle='#f2f2f2'; c.fillRect(mx(0)-2, mz(-5720), 4, mz(-5080)-mz(-5720));
+    // rings: passed grey, next green, later gold
+    Missions.rings.forEach((r,i)=>{
+      c.fillStyle = r.passed ? '#7d8a99' : (i===Missions.state.ringsPassed ? '#39ff6e' : '#ffb020');
+      c.beginPath(); c.arc(mx(r.x), mz(r.z), r.passed?2.5:3.5, 0, Math.PI*2); c.fill();
+    });
+    // the plane: a triangle rotated to its heading (heading 0 = north = up)
+    const px=mx(plane.pos[0]), py=mz(plane.pos[2]);
+    c.save(); c.translate(px,py); c.rotate(-plane.heading);
+    c.fillStyle='#ffffff'; c.beginPath();
+    c.moveTo(0,-7); c.lineTo(4.5,5); c.lineTo(0,2.5); c.lineTo(-4.5,5); c.closePath(); c.fill();
+    c.restore();
+    c.fillStyle='#cfe8ff'; c.font='bold 10px Verdana'; c.fillText('N', S-13, 12);
   }
   return {init, update};
 })();

@@ -1,4 +1,6 @@
-// camera.js — stable chase camera: smoothed position behind the plane, gentle FOV with speed.
+// camera.js — stable chase camera: exponentially smoothed position a little
+// behind and above the plane, looking down its nose; the field of view widens
+// gently with speed so fast flight feels fast without fisheye.
 'use strict';
 const Camera = (() => {
   const pos=[0,130,260], look=[0,120,0];

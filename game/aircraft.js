@@ -1,4 +1,7 @@
-// aircraft.js — the plane, built from parts: fuselage, wings, tail, canopy, propeller, gear.
+// aircraft.js — the plane, built from parts so it reads as a real aeroplane
+// from the chase camera: fuselage, nose cowling, canopy, wing with a stripe,
+// tailplane and fin, fixed gear with wheels, and a separate propeller mesh
+// that main.js spins.
 'use strict';
 const Aircraft = (() => {
   function build(){
@@ -9,7 +12,7 @@ const Aircraft = (() => {
     b.box(0,0.95,-0.4, 1.15,0.75,1.9, glass);       // canopy
     b.box(0,0,0.4, 8.6,0.22,1.5, cream);            // main wing
     b.box(0,0.14,0.4, 8.6,0.06,0.5, body);          // wing stripe
-    b.box(-4.0,0,0.4, 0.7,0.85,1.4, body);          // wingtip floats/struts L
+    b.box(-4.0,0,0.4, 0.7,0.85,1.4, body);          // wingtip float/strut L
     b.box( 4.0,0,0.4, 0.7,0.85,1.4, body);          // wingtip R
     b.box(0,0.1,3.1, 3.4,0.2,1.0, cream);           // tailplane
     b.box(0,0.85,3.1, 0.22,1.7,1.0, body);          // vertical fin
@@ -23,8 +26,8 @@ const Aircraft = (() => {
   }
   function buildPropeller(){
     const b=Render.builder(), col=[0.12,0.12,0.13];
-    b.box(0,0,0, 0.42,4.6,0.10, col);
-    b.box(0,0,0, 4.6,0.42,0.10, col);
+    b.box(0,0,0, 0.42,4.6,0.10, col);   // vertical blade pair
+    b.box(0,0,0, 4.6,0.42,0.10, col);   // horizontal blade pair
     return b.build();
   }
   return {build, buildPropeller};

@@ -1,4 +1,6 @@
-// missions.js — one sortie: 6 rings down the valley, then land on the runway.
+// missions.js — the sortie: six survey rings threaded down the valley, then a
+// landing on runway 27. Owns the ring list, pass detection, the landing rules
+// (on the strip, under 46 KT, gentle sink, all rings first) and the score.
 'use strict';
 const Missions = (() => {
   const rings = [
@@ -11,13 +13,14 @@ const Missions = (() => {
     const r=nextRing(); if(!r) return null;
     const dx=plane.pos[0]-r.x, dy=plane.pos[1]-r.y, dz=plane.pos[2]-r.z;
     const dist=Math.hypot(dx,dy,dz);
+    // A pass is crossing the ring's plane inside its radius.
     if (Math.abs(dz)<14 && Math.hypot(dx,dy)<r.radius){ r.passed=true; state.ringsPassed++;
       return {event:'ring', n:state.ringsPassed}; }
     return {dist};
   }
   function checkLanding(plane, groundY){
     const onStrip = Math.abs(plane.pos[0])<30 && plane.pos[2]<-5080 && plane.pos[2]>-5720;
-    if (!onStrip) return null;
+    if (!onStrip) return null; // ground contact off the strip is terrain, judged by the caller
     const agl = plane.pos[1]-groundY;
     if (agl<3.2){
       if (plane.speed>46) return {result:'crash', why:'TOO FAST ON TOUCHDOWN — '+Math.round(plane.speed)+' KT'};
@@ -33,6 +36,7 @@ const Missions = (() => {
     if (state.landed) s+=300;
     return Math.max(0,s);
   }
+  // A ring is a torus: green for the next one, gold for the ones after.
   function buildRingMesh(active){
     const b=Render.builder(), col = active?[0.15,0.95,0.35]:[1.0,0.62,0.10];
     const R=30, T=2.0, SEG=26, TUB=6;

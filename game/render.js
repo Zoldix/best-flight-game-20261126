@@ -1,4 +1,6 @@
-// render.js — WebGL2 renderer, matrix math, mesh builder. No network, no random.
+// render.js — WebGL renderer, matrix math, mesh builder. No network, no random.
+// One shader for the whole world: flat-shaded triangles with a warm/cool sun
+// tint and distance fog. fogScale < 0 draws a mesh unlit and unfogged (the sky).
 'use strict';
 const Render = (() => {
   let gl, prog, aPos, aCol, aNor, uMVP, uFog, uFogScale;
@@ -40,7 +42,7 @@ const Render = (() => {
   function sub(a,b){ return [a[0]-b[0],a[1]-b[1],a[2]-b[2]]; }
   function cross(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
   function norm(a){ const l=Math.hypot(a[0],a[1],a[2])||1; return [a[0]/l,a[1]/l,a[2]/l]; }
-  // Mesh builder: non-indexed triangles with flat normals
+  // Mesh builder: non-indexed triangles with flat normals, one colour per face.
   function builder(){ const P=[],C=[],N=[];
     function tri(a,b,c,col){ const n=norm(cross(sub(b,a),sub(c,a)));
       for(const v of [a,b,c]){ P.push(v[0],v[1],v[2]); C.push(col[0],col[1],col[2]); N.push(n[0],n[1],n[2]); } }

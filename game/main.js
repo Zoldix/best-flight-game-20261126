@@ -1,4 +1,7 @@
-// main.js — flight model (fixed timestep), input (keyboard+mouse), screens, demo/seed API.
+// main.js — flight model on a fixed timestep, keyboard + mouse input, the
+// screen flow (title -> fly -> landed / crash / results), and the demo/seed
+// API the screenshot harness drives: ?scene=<name>&manual=1&seed=<n> poses a
+// deterministic scene, window.__flight.step() advances one tick.
 'use strict';
 const DT = 1/60;
 const params = new URLSearchParams(location.search);
@@ -50,7 +53,8 @@ function startSortie(){
 function step(){
   tick++;
   if (screen!=='fly') return;
-  // input -> control deflections (responsive at every speed: authority scales mildly)
+  // input -> control deflections; authority scales mildly with speed so the
+  // plane stays responsive slow and does not get twitchy fast
   const auth = 0.55 + Math.min(0.65, plane.speed/110);
   let pitchIn=0, rollIn=0;
   if (keys['w']||keys['arrowup']) pitchIn += 1;
@@ -63,14 +67,15 @@ function step(){
   plane.roll += ((rollIn*0.95)-plane.roll)*0.12;
   plane.pitch += ((pitchIn*0.38)-plane.pitch)*0.10;
   plane.heading += plane.roll * (plane.speed*0.00028) * (180/Math.PI) * 0.016 * 3.2;
-  // physics
+  // physics: throttle sets a target speed, pitch trades speed for climb,
+  // and below 30 KT the plane sinks (the stall)
   const targetSpeed = 18 + plane.throttle*95;
   plane.speed += (targetSpeed-plane.speed)*0.012 - plane.pitch*plane.speed*0.010;
   plane.speed = Math.max(14, Math.min(125, plane.speed));
   const climb = Math.sin(plane.pitch)*plane.speed*0.42 - (plane.speed<30? (30-plane.speed)*0.22 : 0);
   plane.vy = climb;
   const fwd=[Math.sin(plane.heading)*Math.cos(plane.pitch), 0, -Math.cos(plane.heading)*Math.cos(plane.pitch)];
-  const horiz = plane.speed*0.447; // kt -> m/s-ish scale for world units per tick below
+  const horiz = plane.speed*0.447; // kt -> world units per second, scaled below
   plane.pos[0] += fwd[0]*horiz*DT*3.2;
   plane.pos[2] += fwd[2]*horiz*DT*3.2;
   plane.pos[1] += plane.vy*DT*3.2;
@@ -101,7 +106,7 @@ function renderFrame(){
   const fog=[0.96,0.60,0.38];
   Render.draw(skyMesh, vp, fog, -1);
   Render.draw(terrainMesh, vp, fog);
-  // rings
+  // rings: the next one green, the rest gold, passed ones gone
   for (let i=0;i<Missions.rings.length;i++){ const r=Missions.rings[i]; if (r.passed) continue;
     let m=Render.mul(Render.trans(r.x,r.y,r.z), Render.ident());
     Render.draw(i===Missions.state.ringsPassed?ringMeshActive:ringMeshIdle, Render.mul(vp,m), fog); }
@@ -116,7 +121,6 @@ function renderFrame(){
   fl.textContent = tick<flashUntil ? flashMsg : '';
 }
 function frame(){
-  // fixed timestep accumulator, capped so SwiftShader slowness cannot spiral
   step(); renderFrame();
   requestAnimationFrame(frame);
 }
@@ -147,11 +151,17 @@ function boot(){
     if ((e.key==='Enter'||e.key===' ') && screen==='title'){ e.preventDefault(); startSortie(); }
     if (e.key.toLowerCase()==='r' && (screen==='crash'||screen==='landed')) location.search='?seed='+SEED; });
   addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
-  addEventListener('mousemove', e=>{ if (params.get('scene')) return; // demo/seed scenes ignore the mouse: screenshots must be reproducible const nx=(e.clientX/innerWidth-0.5)*2, ny=(0.5-e.clientY/innerHeight)*2;
+  addEventListener('mousemove', e=>{ if (params.get('scene')) return; // demo/seed scenes ignore the mouse: screenshots must be reproducible
+    const nx=(e.clientX/innerWidth-0.5)*2, ny=(0.5-e.clientY/innerHeight)*2;
     mouseSteer={x:nx*0.7, y:ny*0.7}; });
   document.getElementById('start-btn').addEventListener('click', startSortie);
   const scene=params.get('scene');
   if (scene) applyPreset(scene);
+  // the kit harness's own shot names, as an alias of ours
+  const shot=params.get('shot');
+  if (shot==='start') applyPreset('title');
+  else if (shot==='play') applyPreset('cover');
+  else if (shot==='end') applyPreset('results');
   if (params.get('autostart')==='1' && screen==='title') startSortie();
   showScreen(); renderFrame();
   if (params.get('manual')!=='1') requestAnimationFrame(frame);

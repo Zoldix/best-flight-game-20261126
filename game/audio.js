@@ -1,4 +1,6 @@
-// audio.js — tiny WebAudio engine hum + ring chime. Created only after a user gesture.
+// audio.js — tiny WebAudio sounds: a sawtooth engine hum whose pitch follows
+// the throttle, and a sine chime when a ring is cleared. The context is only
+// created after a user gesture (starting the sortie), per browser policy.
 'use strict';
 const AudioSys = (() => {
   let ctx=null, osc=null, gain=null;
