@@ -173,7 +173,12 @@ function applyPreset(name){
   if (name==='cover'||name==='runway'||name==='results'||name==='title') Missions.select('survey');
   if (name==='cover'){ plane.pos=[6,140,-4780]; plane.heading=-0.01; plane.pitch=0.0; plane.speed=60; plane.throttle=0.50;
     for(let i=0;i<5;i++) Missions.rings[i].passed=true; Missions.state.ringsPassed=5;
-    Fuel.set(54); Damage.set(9); screen='fly'; }
+    Fuel.set(54); Damage.set(9); screen='fly';
+    // Poster treatment: closer chase camera (bigger plane), enlarged HUD
+    // type, and a one-line callout that names all three sortie systems.
+    document.body.classList.add('poster');
+    Camera.setDist(6.2);
+    window.__flightPoster='3 SORTIES — SURVEY · FIRE · MEDEVAC'; }
   else if (name==='runway'){ plane.pos=[6,36,-4995]; plane.heading=-0.03; plane.pitch=-0.06; plane.speed=47; plane.throttle=0.30;
     for(const r of Missions.rings) r.passed=true; Missions.state.ringsPassed=6; Fuel.set(38); Damage.set(18); screen='fly'; }
   else if (name==='results'){ applyPresetSilent(); screen='results';

@@ -49,3 +49,16 @@
 #end-stats .medal-silver{color:#dfe8f2}
 #end-stats .medal-bronze{color:#e09a5c}
 #warnline{font-size:15px;font-weight:bold;color:#ff4444;margin-top:5px;min-height:18px}
+/* Poster cover (scene=cover only): type sized to survive the contact sheet —
+   at a 400 px-wide thumbnail the mission line still reads ~9 px and the big
+   readouts ~14 px, where the standard HUD would fall to ~6 px. */
+body.poster #mission-panel{width:520px}
+body.poster #mission{font-size:31px}
+body.poster #ringinfo,body.poster #distinfo{font-size:20px}
+body.poster #callout{font-size:25px}
+body.poster .legend{font-size:14px}
+body.poster .big{font-size:47px}
+body.poster .mid{font-size:27px}
+body.poster .label{font-size:15px}
+body.poster #sys-panel{font-size:19px;width:370px}
+body.poster #flash{font-size:52px}

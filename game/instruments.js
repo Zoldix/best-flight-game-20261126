@@ -42,7 +42,7 @@ const Instruments = (() => {
       if (nr){ const d=Math.hypot(plane.pos[0]-nr.x, plane.pos[2]-nr.z);
         el.ringinfo.textContent='NEXT RING '+Math.round(d)+' M AHEAD';
         el.distinfo.textContent='RUNWAY '+runwayDist+' M NORTH';
-        el.callout.textContent = d<420 ? '► RING AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN RING';
+        el.callout.textContent = window.__flightPoster || (d<420 ? '► RING AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN RING');
       } else { el.ringinfo.textContent='ALL RINGS CLEAR — LAND NOW';
         el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
         el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
