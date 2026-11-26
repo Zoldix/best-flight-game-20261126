@@ -18,9 +18,12 @@ const Terrain = (() => {
   function valleyBend(z){ const f = z<-4600 ? Math.max(0, 1-(-z-4600)/500) : 1;
     return (150*Math.sin(z*0.00052)+80*Math.sin(z*0.00127+1.7)) * f; }
   function riverX(z){ const base = valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037);
-    // Past the strip (z < -4900) the river swings west across the valley
-    // floor, so it crosses the cover poster's foreground below the runway.
-    return z<-4900 ? base - 175*Math.min(1,(-z-4900)/160) : base; }
+    // Past the strip the river swings west across the valley floor, so it
+    // crosses the cover poster's foreground below the runway. The swing is
+    // spread over 320 m: compressed into 160 m the centreline shifted
+    // further per ribbon step than the ribbon is wide, folding the ribbon
+    // into stripes at the bend.
+    return z<-4850 ? base - 175*Math.min(1,(-z-4850)/320) : base; }
   function river2X(z){ return 55 + 95*Math.sin(z*0.0021); } // the far reach, beyond the runway (v2: swings right across the view axis past the strip, so the winding river reads in the cover)
   function fbm(x,z){ return noise(x,z)*0.60 + noise(x*2.7,z*2.7)*0.28 + noise(x*6.3,z*6.3)*0.12; }
   // Full plateau |x|<100: every terrain grid vertex under the strip sits at
@@ -49,7 +52,7 @@ const Terrain = (() => {
     const rb = runwayBlend(x,z); if (rb>0) h = h*(1-rb)+10*rb;
     // The west swing past the strip cuts its channel through the apron edge
     // as well, or the plateau blend would bury this reach of the river.
-    if (z<-4900 && z>-5200 && Math.abs(x-riverX(z))<40) h = Math.min(h, 1.5);
+    if (z<-4850 && z>-5250 && Math.abs(x-riverX(z))<40) h = Math.min(h, 1.5);
     if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
     // Medevac pads sit dead flat: the clearing pad at the valley floor's own
     // height, the hospital pad at airfield height beside the strip.
@@ -72,9 +75,9 @@ const Terrain = (() => {
   }
   function colorAt(x,z,h,seedKey){
     const rd=Math.abs(x-riverX(z));
-    if (z>-5200 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
-    if (z>-5200 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
-    if (z>-5200 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
+    if (z>-5250 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
+    if (z>-5250 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
+    if (z>-5250 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
     if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
     if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
@@ -93,13 +96,20 @@ const Terrain = (() => {
     }
     // The river is a ribbon mesh that follows the curve, bank under water, so
     // it reads as a winding river instead of painted squares.
-    for(let z=300; z>-5200; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
+    for(let z=300; z>-5250; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
       const bank=[0.72,0.60,0.40], water=[0.12,0.42,0.80], wy=2.6;
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
-      b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
-      // Sun glint: a narrow gold lane down the foreground reach, where the
-      // low sun reflects off the water in the cover view (round 4).
-      if (z<=-4360) b.quad([cx-6.5,wy+0.18,z],[cx2-6.5,wy+0.18,z-40],[cx2+6.5,wy+0.18,z-40],[cx+6.5,wy+0.18,z],[1.0,0.72,0.30]);
+      if (z<=-4360){
+        // Sun glint on the foreground reach, built as the water's own
+        // middle lane (same plane, adjacent, never overlapping): a raised
+        // overlay lane drifted off the water wherever the river bends
+        // sharply and striped the bank instead (round 4 fix).
+        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-5,wy,z-40],[cx-5,wy,z],water);
+        b.quad([cx-5,wy,z],[cx2-5,wy,z-40],[cx2+5,wy,z-40],[cx+5,wy,z],[1.0,0.78,0.42]);
+        b.quad([cx+5,wy,z],[cx2+5,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
+      } else {
+        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
+      }
     }
     // The far reach, beyond the runway's far end (v2: wider and a brighter
     // blue, so the winding river survives the cover's thumbnail test).
