@@ -1,5 +1,5 @@
 // terrain.js — the sunset valley and everything in it: heightmap-noise mountains
-// around a bending valley axis, a ribbon river and a lake, trees, the marked
+// around a bending valley axis and a lake, trees, the marked
 // runway "27", and the sky (gradient dome, radial-gradient sun, clouds).
 // Everything is generated from seeded noise only, so the world is identical
 // on every run and the screenshots reproduce byte for byte.
@@ -17,14 +17,6 @@ const Terrain = (() => {
   // runway so the strip and its final approach stay straight and level.
   function valleyBend(z){ const f = z<-4600 ? Math.max(0, 1-(-z-4600)/500) : 1;
     return (150*Math.sin(z*0.00052)+80*Math.sin(z*0.00127+1.7)) * f; }
-  function riverX(z){ const base = valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037);
-    // Past the strip the river swings west across the valley floor, so it
-    // crosses the cover poster's foreground below the runway. The swing is
-    // spread over 320 m: compressed into 160 m the centreline shifted
-    // further per ribbon step than the ribbon is wide, folding the ribbon
-    // into stripes at the bend.
-    return z<-4850 ? base - 175*Math.min(1,(-z-4850)/320) : base; }
-  function river2X(z){ return 55 + 95*Math.sin(z*0.0021); } // the far reach, beyond the runway (v2: swings right across the view axis past the strip, so the winding river reads in the cover)
   function fbm(x,z){ return noise(x,z)*0.60 + noise(x*2.7,z*2.7)*0.28 + noise(x*6.3,z*6.3)*0.12; }
   // Full plateau |x|<100: every terrain grid vertex under the strip sits at
   // exactly h=10, so the strip mesh and its markings are never buried.
@@ -42,18 +34,15 @@ const Terrain = (() => {
     h += m * fbm(x, z) * 60; // heightmap-noise rolling mountain surface
     h += Math.max(0,(-z-4300)/900)**2*35;
     // Valley head: high and broken at the sides, but pinched to a low gorge
-    // on the axis (v2), so the far river stays visible past the strip.
+    // on the axis (v2), so the valley head reads past the strip.
     if (z<-5650){ const gorge = Math.min(1, Math.max(0.22, (Math.abs(bx)-170)/260));
       h += Math.min(150, (-z-5650)/6) * (0.45+0.75*Math.max(0,fbm(x+900, z))) * gorge; }
-    const rd = Math.abs(x-riverX(z));
-    if (rd<46 && Math.abs(bx)<380 && z>-4900) h = Math.min(h, 1.5); // river channel
+    // v5 (user's call): the river is removed entirely — its channel carve
+    // goes too, so the valley floor is one continuous meadow. The lake
+    // stays: the Scoop & Drop sortie skims it.
     const lake = ((x-230)/190)**2 + ((z+3750)/230)**2;
     if (lake<1) h = Math.min(h, 2.0); // lake bed
     const rb = runwayBlend(x,z); if (rb>0) h = h*(1-rb)+10*rb;
-    // The west swing past the strip cuts its channel through the apron edge
-    // as well, or the plateau blend would bury this reach of the river.
-    if (z<-4850 && z>-5250 && Math.abs(x-riverX(z))<40) h = Math.min(h, 1.5);
-    if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
     // Medevac pads sit dead flat: the clearing pad at the valley floor's own
     // height, the hospital pad at airfield height beside the strip.
     // v2: the flat radius must span several 60 m terrain-grid cells, or the
@@ -74,14 +63,8 @@ const Terrain = (() => {
     return stops[stops.length-1][1];
   }
   function colorAt(x,z,h,seedKey){
-    const rd=Math.abs(x-riverX(z));
-    // v5: the painted water band is much narrower — the ribbon mesh below
-    // is the river; wide blue terrain faces read as angular shards in the
-    // foreground. The banks soften toward olive so the sand meets the
-    // grass without a hard stripe.
-    if (z>-5250 && rd<11 && Math.abs(x)<340 && h<4) return [0.11,0.40,0.78];       // river water (under the ribbon)
-    if (z>-5250 && rd<34 && Math.abs(x)<340 && h<6) return [0.66,0.57,0.40];       // inner bank
-    if (z>-5250 && rd<52 && Math.abs(x)<340 && h<8) return [0.55,0.52,0.36];       // outer bank, olive-sand
+    // v5: no river colours at all (the river is removed); only the lake
+    // keeps its water and shore.
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
     if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
     if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
@@ -98,53 +81,28 @@ const Terrain = (() => {
       const c=colorAt(x+S/2,z-S/2,heightAt(x+S/2,z-S/2),qi);
       b.quad(p(x,z),p(x,z-S),p(x+S,z-S),p(x+S,z),c);
     }
-    // The river is a ribbon mesh that follows the curve, bank under water, so
-    // it reads as a winding river instead of painted squares.
-    for(let z=300; z>-5250; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
-      const bank=[0.66,0.56,0.39], wy=2.6;
-      b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
-      // v5 water: three lanes across the ribbon — deep on the shaded west
-      // side, bright on the east — with a per-segment brightness jitter so
-      // the surface shimmers instead of reading as one flat blue strip.
-      const j = 0.90 + hash(Math.round(z/40), 3)*0.20;
-      const deep=[0.09*j,0.32*j,0.68*j], mid=[0.13*j,0.46*j,0.86*j], lite=[0.17*j,0.53*j,0.93*j];
-      if (z<=-4360){
-        // Foreground reach: the sun's reflection is a narrow gold lane on
-        // the western third (the sun sits north-west), not a wide stripe
-        // down the middle.
-        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-6,wy,z-40],[cx-6,wy,z],deep);
-        b.quad([cx-6,wy,z],[cx2-6,wy,z-40],[cx2+1,wy,z-40],[cx+1,wy,z],[1.0,0.82,0.52]);
-        b.quad([cx+1,wy,z],[cx2+1,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],mid);
-      } else {
-        b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2-5,wy,z-40],[cx-5,wy,z],deep);
-        b.quad([cx-5,wy,z],[cx2-5,wy,z-40],[cx2+5,wy,z-40],[cx+5,wy,z],mid);
-        b.quad([cx+5,wy,z],[cx2+5,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],lite);
-      }
-    }
-    // The far reach, beyond the runway's far end (v2: wider and a brighter
-    // blue, so the winding river survives the cover's thumbnail test).
-    for(let z=-5700; z>-6140; z-=40){ const cx=river2X(z), cx2=river2X(z-40);
-      b.quad([cx-38,2.1,z],[cx2-38,2.1,z-40],[cx2+38,2.1,z-40],[cx+38,2.1,z],[0.72,0.60,0.40]);
-      b.quad([cx-26,2.6,z],[cx2-26,2.6,z-40],[cx2+26,2.6,z-40],[cx+26,2.6,z],[0.16,0.52,0.95]); }
+    // v5: no river ribbon — removed on the user's call (it never read
+    // clearly and cluttered every frame). The valley floor is meadow and
+    // forest from the strip to the lake.
     // Lake: flat disc + shore ring at the lake centre.
     { const lx=230, lz=-3750, SEG2=22;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([lx,2.6,lz],[lx+Math.cos(a1)*205,2.1,lz+Math.sin(a1)*245],[lx+Math.cos(a2)*205,2.1,lz+Math.sin(a2)*245],[0.74,0.62,0.42]);
         b.tri([lx,2.7,lz],[lx+Math.cos(a1)*168,2.7,lz+Math.sin(a1)*200],[lx+Math.cos(a2)*168,2.7,lz+Math.sin(a2)*200],[0.12,0.44,0.82]); } }
-    // Trees: trunk + two crossed conifer triangles, kept out of the river,
+    // Trees: trunk + two crossed conifer triangles, kept out of the lake
     // the lake and off the airfield plateau. Round 4: denser (330) with two
     // canopy greens, plus low bushes, so the valley floor reads as forest.
     const tr=makeRng(777);
     const inLake=(x,z)=>(((x-230)/190)**2+((z+3750)/230)**2)<1.3;
     for(let i=0;i<330;i++){ const x=(tr()*2-1)*300, z=200-tr()*5600;
-      if (Math.abs(x-riverX(z))<60 || runwayBlend(x,z)>0 || inLake(x,z)) continue;
+      if (runwayBlend(x,z)>0 || inLake(x,z)) continue;
       const h=heightAt(x,z), s=7+tr()*7, g=tr()<0.5?[0.08,0.32,0.12]:[0.13,0.40,0.15];
       b.box(x,h+2,z,1.6,4,1.6,[0.36,0.24,0.12]);
       b.tri([x-s,h+3,z],[x+s,h+3,z],[x,h+3+s*1.7,z],g);
       b.tri([x,h+3,z-s],[x,h+3,z+s],[x,h+3+s*1.7,z],g);
     }
     for(let i=0;i<130;i++){ const x=(tr()*2-1)*320, z=200-tr()*5600;
-      if (Math.abs(x-riverX(z))<48 || runwayBlend(x,z)>0 || inLake(x,z)) continue;
+      if (runwayBlend(x,z)>0 || inLake(x,z)) continue;
       const h=heightAt(x,z), w=2.6+tr()*2.4;
       b.box(x,h+1.1,z,w,2.2+tr()*1.4,w*0.8,tr()<0.5?[0.10,0.34,0.13]:[0.16,0.42,0.16]);
     }
@@ -224,15 +182,10 @@ const Terrain = (() => {
       b.box(128,42,-5580,2.4,2,2.4,[1.0,0.20,0.20]);         // beacon
       b.box(-88,14,-5360,22,8,16,wall); b.box(-88,18.6,-5360,24,1.4,18,roof);
     }
-    // A bridge where the foreground river swings west (round 6): deck on
-    // two piers with low rails, crossing the river at z -4980, x about -138.
-    { const deck=[0.42,0.40,0.38], pier=[0.36,0.34,0.32];
-      b.box(-138,7.6,-4980,118,2.2,13,deck);
-      b.box(-172,3.8,-4980,5,7.6,10,pier); b.box(-104,3.8,-4980,5,7.6,10,pier);
-      b.box(-138,9.6,-4986,118,1.8,1.2,deck); b.box(-138,9.6,-4974,118,1.8,1.2,deck);
-    }
+    // v5: the bridge went with the river — it crossed water that no
+    // longer exists.
     // v4 cover detail in the approach corridor (z -4400..-5050, the ground
-    // the cover frame actually shows): a farmstead west of the river —
+    // the cover frame actually shows): a farmstead on the west meadow —
     // barn, silo, house — and a denser tree line along both banks, so the
     // foreground has landmarks at chase distance instead of bare grass.
     { const fw=[0.62,0.58,0.52], froof=[0.55,0.22,0.14];
@@ -244,7 +197,7 @@ const Terrain = (() => {
       b.box(-168,hy+3,-4705,11,6,9,[0.92,0.88,0.78]); b.box(-168,hy+6.6,-4705,13,1.4,11,[0.32,0.28,0.28]); // farmhouse
       const tr2=makeRng(2027);
       for(let i=0;i<46;i++){ const side=i%2? 1:-1, tx=side*(95+tr2()*85), tz=-4420-tr2()*600;
-        if (Math.abs(tx-riverX(tz))<52 || runwayBlend(tx,tz)>0) continue;
+        if (runwayBlend(tx,tz)>0) continue;
         const th=heightAt(tx,tz), s=7.5+tr2()*6.5, g=tr2()<0.5?[0.08,0.32,0.12]:[0.14,0.42,0.16];
         b.box(tx,th+2,tz,1.6,4,1.6,[0.36,0.24,0.12]);
         b.tri([tx-s,th+3,tz],[tx+s,th+3,tz],[tx,th+3+s*1.7,tz],g);
@@ -300,5 +253,5 @@ const Terrain = (() => {
         b.box(hx+ox,hy+oy,hz+oz, w,13+hr()*8,w*0.32, k%2? [0.97,0.76,0.70]:[0.80,0.58,0.62]); } }
     return b.build();
   }
-  return {heightAt, build, buildSky, riverX};
+  return {heightAt, build, buildSky};
 })();

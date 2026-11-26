@@ -1,7 +1,7 @@
 // instruments.js — the HUD: big altitude / airspeed / heading readouts,
 // vertical speed, throttle / fuel / damage bars, the mission panel with its
 // next-ring callout, an artificial-horizon canvas, and a north-up minimap
-// that tracks the plane, the rings, the river and the runway.
+// that tracks the plane, the rings, the lake and the runway.
 'use strict';
 const Instruments = (() => {
   const el = {};
@@ -122,11 +122,8 @@ const Instruments = (() => {
     const mx=x=>(x+1250)/2500*S, mz=z=>(350-z)/6800*S;
     c.clearRect(0,0,S,S);
     c.fillStyle='#0d2b1d'; c.fillRect(0,0,S,S);
-    // river polyline, sampled from the same curve the terrain uses
-    c.strokeStyle='#3f9be0'; c.lineWidth=2.5; c.beginPath();
-    for(let z=300; z>=-4860; z-=180){ const px=mx(Terrain.riverX(z)), py=mz(z);
-      if (z===300) c.moveTo(px,py); else c.lineTo(px,py); }
-    c.stroke();
+    // v5: no river polyline — the river is removed from the world, so the
+    // map no longer draws one. The lake stays (the scoop target).
     // lake
     c.fillStyle='#3f9be0'; c.beginPath(); c.arc(mx(230),mz(-3750),9,0,Math.PI*2); c.fill();
     // runway: a white slot near the north end

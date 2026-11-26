@@ -19,7 +19,7 @@ screen:
 Every landing is on the marked runway "27" — centreline dashes, threshold
 piano bars, touchdown bars, edge lights — or on a marked pad, slower than
 46 KT with a gentle sink, and every touchdown is graded **SMOOTH / FIRM /
-MISSED** with a **GOLD / SILVER / BRONZE** medal per sortie. A winding river,
+MISSED** with a **GOLD / SILVER / BRONZE** medal per sortie. A lake,
 a lake, faceted mountains lit warm on the sun side and cool in shade, a
 gradient sunset sky.
 
@@ -32,7 +32,7 @@ gradient sunset sky.
 
 The HUD shows altitude, vertical speed, airspeed, heading, throttle, fuel and
 damage bars, gear and flap state, low-fuel and stall warnings, an artificial
-horizon, a north-up minimap (rings, river, lake, fire, pads, runway), and a
+horizon, a north-up minimap (rings, lake, fire, pads, runway), and a
 mission panel that briefs the current stage. Sound is synthesized live
 (engine hum, chime) — no audio files.
 
