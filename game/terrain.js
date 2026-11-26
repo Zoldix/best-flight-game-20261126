@@ -58,7 +58,7 @@ const Terrain = (() => {
   // valley green -> olive -> warm rock -> slate -> warm snow.
   function mixc(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
   function palette(h){
-    const stops=[[0,[0.12,0.36,0.14]],[30,[0.27,0.42,0.15]],[70,[0.38,0.29,0.22]],[130,[0.34,0.28,0.38]],[190,[0.95,0.85,0.76]]];
+    const stops=[[0,[0.16,0.46,0.18]],[30,[0.30,0.55,0.20]],[60,[0.35,0.42,0.30]],[85,[0.45,0.42,0.50]],[120,[0.97,0.96,0.94]]]; // v6: vivid day greens, blue-grey rock, snow from ~85 m
     for(let i=1;i<stops.length;i++){ if(h<=stops[i][0]){ const t=(h-stops[i-1][0])/(stops[i][0]-stops[i-1][0]); return mixc(stops[i-1][1],stops[i][1],Math.max(0,Math.min(1,t))); } }
     return stops[stops.length-1][1];
   }
@@ -66,8 +66,8 @@ const Terrain = (() => {
     // v5: no river colours at all (the river is removed); only the lake
     // keeps its water and shore.
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
-    if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
-    if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
+    if (lake<0.82 && h<4) return [0.13,0.50,0.95];                                   // lake water
+    if (lake<1.15 && h<8) return [0.80,0.70,0.48];                                   // lake shore
     if (runwayBlend(x,z)>0.6) return [0.52,0.50,0.48];                               // airfield apron
     let c = palette(h);
     const v = 0.90 + hash(seedKey, seedKey*3)*0.20;                                   // per-face variation
@@ -88,7 +88,7 @@ const Terrain = (() => {
     { const lx=230, lz=-3750, SEG2=22;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([lx,2.6,lz],[lx+Math.cos(a1)*205,2.1,lz+Math.sin(a1)*245],[lx+Math.cos(a2)*205,2.1,lz+Math.sin(a2)*245],[0.74,0.62,0.42]);
-        b.tri([lx,2.7,lz],[lx+Math.cos(a1)*168,2.7,lz+Math.sin(a1)*200],[lx+Math.cos(a2)*168,2.7,lz+Math.sin(a2)*200],[0.12,0.44,0.82]); } }
+        b.tri([lx,2.7,lz],[lx+Math.cos(a1)*168,2.7,lz+Math.sin(a1)*200],[lx+Math.cos(a2)*168,2.7,lz+Math.sin(a2)*200],[0.13,0.50,0.95]); } }
     // Trees: trunk + two crossed conifer triangles, kept out of the lake
     // the lake and off the airfield plateau. Round 4: denser (330) with two
     // canopy greens, plus low bushes, so the valley floor reads as forest.
@@ -96,7 +96,7 @@ const Terrain = (() => {
     const inLake=(x,z)=>(((x-230)/190)**2+((z+3750)/230)**2)<1.3;
     for(let i=0;i<330;i++){ const x=(tr()*2-1)*300, z=200-tr()*5600;
       if (runwayBlend(x,z)>0 || inLake(x,z)) continue;
-      const h=heightAt(x,z), s=7+tr()*7, g=tr()<0.5?[0.08,0.32,0.12]:[0.13,0.40,0.15];
+      const h=heightAt(x,z), s=7+tr()*7, g=tr()<0.5?[0.09,0.42,0.15]:[0.15,0.50,0.18]; // v6 vivid
       b.box(x,h+2,z,1.6,4,1.6,[0.36,0.24,0.12]);
       b.tri([x-s,h+3,z],[x+s,h+3,z],[x,h+3+s*1.7,z],g);
       b.tri([x,h+3,z-s],[x,h+3,z+s],[x,h+3+s*1.7,z],g);
@@ -104,12 +104,12 @@ const Terrain = (() => {
     for(let i=0;i<130;i++){ const x=(tr()*2-1)*320, z=200-tr()*5600;
       if (runwayBlend(x,z)>0 || inLake(x,z)) continue;
       const h=heightAt(x,z), w=2.6+tr()*2.4;
-      b.box(x,h+1.1,z,w,2.2+tr()*1.4,w*0.8,tr()<0.5?[0.10,0.34,0.13]:[0.16,0.42,0.16]);
+      b.box(x,h+1.1,z,w,2.2+tr()*1.4,w*0.8,tr()<0.5?[0.11,0.44,0.15]:[0.18,0.52,0.19]);
     }
     // Valley mist (round 4): broken pale patches pooling on the valley
     // floor, never one full-width sheet — a single sheet read as a solid
     // slab from a low camera, so the mist is laid as offset clusters.
-    for(const [mz,tone] of [[-700,[0.90,0.76,0.74]],[-1500,[0.93,0.79,0.77]],[-2900,[0.94,0.81,0.79]],[-4300,[0.93,0.80,0.77]],[-5980,[0.95,0.83,0.81]]]){
+    for(const [mz,tone] of [[-700,[0.74,0.83,0.79]],[-1500,[0.76,0.85,0.80]],[-2900,[0.77,0.86,0.81]],[-4300,[0.76,0.85,0.80]],[-5980,[0.78,0.87,0.82]]]){ // v6: cool day haze
       const cx=valleyBend(mz)*0.8, gy=heightAt(cx,mz);
       for(const [ox,pw,pd,py] of [[-190,300,95,7],[-30,230,70,11],[130,280,85,8],[265,190,60,12],[-300,170,55,12]]){
         const px=cx+ox;
@@ -181,6 +181,18 @@ const Terrain = (() => {
       b.box(128,38.5,-5580,12,5,12,[0.20,0.30,0.42]);        // tower cab
       b.box(128,42,-5580,2.4,2,2.4,[1.0,0.20,0.20]);         // beacon
       b.box(-88,14,-5360,22,8,16,wall); b.box(-88,18.6,-5360,24,1.4,18,roof);
+      // v6 airfield dressing (the user's reference frame): a red-white
+      // checker band under the tower cab, service roads across the apron,
+      // and a marked helipad east of the hangars.
+      for(let i=0;i<4;i++){ const cx2=123.2+i*3.2;
+        b.box(cx2,35.4,-5580,3.0,1.6,12.4, i%2? [0.92,0.16,0.14]:[0.96,0.95,0.93]); }
+      const road=[0.30,0.30,0.33], ry2=10.55;
+      b.quad([-60,ry2,-5330],[70,ry2,-5330],[70,ry2,-5344],[-60,ry2,-5344],road);
+      b.quad([86,ry2,-5240],[100,ry2,-5240],[100,ry2,-5560],[86,ry2,-5560],road);
+      { const hx=170, hz=-5337, SEG3=20, dark=[0.24,0.25,0.28], lite=[0.95,0.95,0.93];
+        for(let i=0;i<SEG3;i++){ const a1=i/SEG3*Math.PI*2, a2=(i+1)/SEG3*Math.PI*2;
+          b.tri([hx,10.6,hz],[hx+Math.cos(a1)*17,10.6,hz+Math.sin(a1)*17],[hx+Math.cos(a2)*17,10.6,hz+Math.sin(a2)*17],dark); }
+        b.box(hx-5,10.75,hz,1.8,0.3,9,lite); b.box(hx+5,10.75,hz,1.8,0.3,9,lite); b.box(hx,10.75,hz,8.2,0.3,1.8,lite); }
     }
     // v5: the bridge went with the river — it crossed water that no
     // longer exists.
@@ -212,7 +224,7 @@ const Terrain = (() => {
   // ---- sky: gradient dome + radial-gradient sun + clouds, one sunset palette ----
   function skyColor(y, R){
     const t=Math.max(0,Math.min(1, y/R*0.5+0.5));
-    const stops=[[0.42,[1.00,0.60,0.34]],[0.55,[0.94,0.52,0.50]],[0.75,[0.42,0.36,0.64]],[1.0,[0.13,0.16,0.38]]];
+    const stops=[[0.42,[0.84,0.91,1.00]],[0.60,[0.54,0.77,0.99]],[0.80,[0.29,0.59,0.97]],[1.0,[0.12,0.41,0.90]]]; // v6: bright day sky (was sunset)
     for(let i=1;i<stops.length;i++){ if(t<=stops[i][0]){ const u=(t-stops[i-1][0])/(stops[i][0]-stops[i-1][0]); return mixc(stops[i-1][1],stops[i][1],Math.max(0,Math.min(1,u))); } }
     return stops[stops.length-1][1];
   }
@@ -231,15 +243,15 @@ const Terrain = (() => {
     // layer is the horizon sky colour, so the glow melts into the dome, and
     // each inner layer steps toward the pale core. All layers sit inside the
     // dome's north wall, or the dome would swallow them.
-    { const layers=[[430,[0.93,0.56,0.47]],[375,[0.96,0.58,0.42]],[325,[0.99,0.60,0.37]],[278,[1.02,0.63,0.33]],
-                    [235,[1.04,0.67,0.33]],[198,[1.03,0.73,0.40]],[163,[1.02,0.80,0.50]],[132,[1.00,0.88,0.63]]];
+    { const layers=[[365,[0.80,0.88,1.00]],[320,[0.92,0.95,1.00]],[276,[1.00,0.98,0.92]],[236,[1.03,0.97,0.82]],
+                    [200,[1.04,0.99,0.86]],[168,[1.05,1.00,0.90]],[138,[1.05,1.01,0.93]],[112,[1.06,1.02,0.95]]]; // v6: white-gold day sun
       layers.forEach(([r,c],i)=> disc(-520,800,-5965+i*3, r, c)); }
     // Clouds: clusters of small boxes with bumpier undersides, lit tops and
     // shaded bottoms in the same pink family as the sky.
     const cr=makeRng(4242);
     for(let i=0;i<15;i++){ const cx=(cr()*2-1)*2300, cy=560+cr()*260, cz=-600-cr()*5600, s=60+cr()*70;
       if (Math.hypot(cx+520, cz+5950)<900) continue; // keep the sun clear
-      const top=[0.99,0.80,0.74], under=[0.74,0.52,0.60];
+      const top=[1.03,1.03,1.02], under=[0.76,0.84,0.96]; // v6: white day clouds
       for(let k=0;k<6;k++){ const ox=(cr()*2-1)*s*0.8, oz=(cr()*2-1)*s*0.35, oy=(cr()*0.6)*20, w=45+cr()*55;
         b.box(cx+ox,cy+oy,cz+oz, w,26+cr()*20,w*0.7, k%2? top: under); } }
     // v4: the old hero clouds sat in the northern view corridor as chunky
@@ -250,7 +262,7 @@ const Terrain = (() => {
     for(const [hx,hy,hz,seed] of [[-1500,690,-6100,31],[1550,760,-6250,47]]){
       const hr=makeRng(seed);
       for(let k=0;k<5;k++){ const ox=(hr()*2-1)*160, oz=(hr()*2-1)*30, oy=(hr()*2-1)*10, w=150+hr()*130;
-        b.box(hx+ox,hy+oy,hz+oz, w,13+hr()*8,w*0.32, k%2? [0.97,0.76,0.70]:[0.80,0.58,0.62]); } }
+        b.box(hx+ox,hy+oy,hz+oz, w,13+hr()*8,w*0.32, k%2? [1.00,1.00,0.99]:[0.83,0.89,0.97]); } }
     return b.build();
   }
   return {heightAt, build, buildSky};

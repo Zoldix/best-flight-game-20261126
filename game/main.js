@@ -147,7 +147,7 @@ function renderFrame(){
   const proj = Render.persp(cam.fov, canvas.width/canvas.height, 0.5, 6000);
   const view = Render.lookAt(cam.pos, cam.look, [0,1,0]);
   const vp = Render.mul(proj, view);
-  const fog=[0.96,0.60,0.38];
+  const fog=[0.62,0.78,0.97]; // v6: pale day-blue haze (was sunset orange)
   Render.draw(skyMesh, vp, fog, -1);
   Render.draw(terrainMesh, vp, fog);
   // rings: the next one green, the rest gold, passed ones gone

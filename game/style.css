@@ -1,7 +1,7 @@
 *{box-sizing:border-box} html,body{margin:0;padding:0;background:#0b1626;font-family:Verdana,Arial,sans-serif;overflow:hidden}
 #gl{display:block;width:100vw;height:100vh}
 #hud{position:fixed;inset:0;pointer-events:none;color:#eaf4ff}
-.panel{position:absolute;background:rgba(6,20,38,.72);border:2px solid rgba(140,200,255,.55);border-radius:10px;padding:10px 14px}
+.panel{position:absolute;background:rgba(9,32,58,.80);border:2px solid rgba(120,210,255,.75);border-radius:14px;padding:10px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.20)} /* v6: brighter rim + flatter deep-blue fill (a gradient fill over the 3D scene pushed the PNGs over the size cap) */ /* v6: glossier panels — deep-blue gradient, brighter rim, soft shadow (layout unchanged) */
 #mission-panel{top:14px;left:14px;width:360px}
 .ptitle{font-size:13px;letter-spacing:3px;color:#8fd0ff}
 #mission{font-size:21px;font-weight:bold;margin:3px 0}
@@ -24,7 +24,7 @@
 #minimap{display:block;margin-top:4px;border-radius:6px}
 #sys-panel{bottom:14px;left:14px;width:330px;font-size:16px}
 #sys-panel .row{margin:5px 0}
-.bar{height:15px;background:rgba(255,255,255,.16);border-radius:7px;overflow:hidden;margin-top:3px}
+.bar{height:15px;background:rgba(255,255,255,.16);border-radius:7px;overflow:hidden;margin-top:3px;box-shadow:inset 0 2px 4px rgba(0,0,0,.35)}
 .bar>div{height:100%;width:50%}
 #gearmsg{font-size:13.5px;color:#9fc6ea;margin-top:6px}
 #horizon-panel{bottom:14px;right:14px;text-align:center}
@@ -36,13 +36,13 @@
 .sub{font-size:24px;color:#ffd23f;font-weight:bold;margin:2px}
 .brief{font-size:19px;max-width:640px;line-height:1.45}
 #mission-cards{display:flex;gap:14px;margin:16px 0 20px;max-width:1060px}
-.card{flex:1;background:rgba(6,20,38,.78);border:2px solid rgba(140,200,255,.45);border-radius:12px;padding:14px 16px;text-align:left;cursor:pointer;pointer-events:auto}
+.card{flex:1;background:rgba(9,32,58,.84);border:2px solid rgba(140,200,255,.45);border-radius:12px;padding:14px 16px;text-align:left;cursor:pointer;pointer-events:auto;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
 .card.sel{border-color:#ffd23f;background:rgba(20,80,143,.88);box-shadow:0 0 18px rgba(255,210,63,.35)}
 .cnum{font-size:12px;letter-spacing:3px;color:#8fd0ff}
 .cname{font-size:25px;font-weight:bold;margin:3px 0;color:#fff}
 .csub{font-size:13.5px;font-weight:bold;color:#ffd23f}
 .cbrief{font-size:14.5px;line-height:1.4;color:#cfe8ff;margin:7px 0 2px}
-#start-btn{font-size:24px;font-weight:bold;padding:14px 34px;border-radius:10px;border:3px solid #ffd23f;background:#14508f;color:#fff;cursor:pointer;pointer-events:auto}
+#start-btn{font-size:24px;font-weight:bold;padding:14px 34px;border-radius:10px;border:3px solid #ffd23f;background:#1d6ab5;color:#fff;cursor:pointer;pointer-events:auto}
 .keys{font-size:15px;color:#b9d9f5}
 #end-stats{font-size:26px;line-height:1.6}
 #end-stats .why{font-size:20px;color:#ffd23f;max-width:700px}

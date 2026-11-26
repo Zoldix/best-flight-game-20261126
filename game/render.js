@@ -12,9 +12,9 @@ const Render = (() => {
       void main(){ vc=c; vn=n; vec4 wp=mvp*vec4(p,1.0); gl_Position=wp; vd=wp.w; }`;
     const fs = `precision mediump float; varying vec3 vc; varying vec3 vn; varying float vd;
       uniform vec3 fog; uniform float fogScale;
-      void main(){ vec3 L=normalize(vec3(-0.55,0.38,-0.45)); float d=max(dot(normalize(vn),L),0.0);
-        float li = fogScale < -0.5 ? 1.0 : 0.52+0.55*d; vec3 col=vc*li*(0.96+0.10*d);
-        if (fogScale > -0.5) col *= mix(vec3(0.80,0.82,1.06), vec3(1.14,0.97,0.80), d); // cool shade -> warm sun face
+      void main(){ vec3 L=normalize(vec3(-0.45,0.85,-0.35)); float d=max(dot(normalize(vn),L),0.0);
+        float li = fogScale < -0.5 ? 1.0 : 0.62+0.50*d; vec3 col=vc*li*(0.96+0.10*d);
+        if (fogScale > -0.5) col *= mix(vec3(0.88,0.92,1.04), vec3(1.08,1.00,0.90), d); // v6: high day sun, gentler warm/cool split (was a low sunset sun)
         float f = fogScale < -0.5 ? 0.0 : smoothstep(700.0,3800.0,vd)*fogScale; col=mix(col,fog,f*0.88);
         gl_FragColor=vec4(col,1.0); }`;
     function sh(t,s){ const o=gl.createShader(t); gl.shaderSource(o,s); gl.compileShader(o);
