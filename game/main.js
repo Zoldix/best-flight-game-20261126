@@ -171,7 +171,7 @@ function frame(){
 // ---- demo / seed presets for deterministic screenshots ----
 function applyPreset(name){
   if (name==='cover'||name==='runway'||name==='results'||name==='title') Missions.select('survey');
-  if (name==='cover'){ plane.pos=[6,140,-4780]; plane.heading=-0.01; plane.pitch=0.0; plane.speed=60; plane.throttle=0.50;
+  if (name==='cover'){ plane.pos=[10,168,-4360]; plane.heading=-0.01; plane.pitch=0.06; plane.speed=60; plane.throttle=0.50;
     for(let i=0;i<5;i++) Missions.rings[i].passed=true; Missions.state.ringsPassed=5;
     Fuel.set(54); Damage.set(9); screen='fly';
     // Poster treatment: closer chase camera (bigger plane), enlarged HUD
@@ -193,7 +193,10 @@ function applyPreset(name){
     Fuel.set(61); Damage.set(4); screen='fly'; }
   else if (name==='medevac'){ Missions.select('medevac'); Missions.state.stage='deliver'; Missions.state.patient=true;
     Missions.state.timeLeft=142;
-    plane.pos=[90,60,-5050]; plane.heading=-0.05; plane.pitch=-0.05; plane.speed=44; plane.throttle=0.3;
+    // v2: on short final, offset west of the pad centreline so the hospital
+    // pad and its white cross show beside the plane, not hidden behind it.
+    plane.pos=[122,50,-5338]; plane.heading=0.10; plane.pitch=-0.10; plane.speed=42; plane.throttle=0.3;
+    plane.roll=0.38; // banked onto final: the tilt uncovers the pad beside the fuselage
     Fuel.set(47); Damage.set(12); screen='fly'; }
   Camera.reset(plane.pos); showScreen();
 }

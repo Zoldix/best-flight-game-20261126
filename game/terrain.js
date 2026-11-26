@@ -18,7 +18,7 @@ const Terrain = (() => {
   function valleyBend(z){ const f = z<-4600 ? Math.max(0, 1-(-z-4600)/500) : 1;
     return (150*Math.sin(z*0.00052)+80*Math.sin(z*0.00127+1.7)) * f; }
   function riverX(z){ return valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037); }
-  function river2X(z){ return 215 + 55*Math.sin(z*0.0021); } // the far reach, beyond the runway
+  function river2X(z){ return 55 + 95*Math.sin(z*0.0021); } // the far reach, beyond the runway (v2: swings right across the view axis past the strip, so the winding river reads in the cover)
   function fbm(x,z){ return noise(x,z)*0.60 + noise(x*2.7,z*2.7)*0.28 + noise(x*6.3,z*6.3)*0.12; }
   // Full plateau |x|<100: every terrain grid vertex under the strip sits at
   // exactly h=10, so the strip mesh and its markings are never buried.
@@ -26,13 +26,19 @@ const Terrain = (() => {
   function heightAt(x,z){
     const bx = x - valleyBend(z);
     const ax=Math.abs(bx);
-    const side = bx<0 ? 1.22 : 0.80; // west range higher than east: no symmetric bowl
+    const side = bx<0 ? 1.38 : 0.68; // west range much higher than east (v2: stronger asymmetry, no symmetric bowl)
     const jag = 0.72 + 0.55*Math.abs(noise(x/150, z/150)) + 0.30*Math.abs(noise(x/47, z/47));
     const m = Math.max(0,(ax-330)/620);
-    let h = 6 + noise(x,z)*7 + (m**2*185 + Math.max(0,(ax-700)/500)**2*150) * side * jag;
+    // Longitudinal ridge variation: the ranges swell and pinch along their
+    // length instead of forming one uniform bowl rim.
+    const swell = 0.82 + 0.38*Math.abs(noise(z/330, 7.3)) + 0.22*Math.abs(noise(x/90, z/90));
+    let h = 6 + noise(x,z)*7 + (m**2*185 + Math.max(0,(ax-700)/500)**2*150) * side * jag * swell;
     h += m * fbm(x, z) * 60; // heightmap-noise rolling mountain surface
     h += Math.max(0,(-z-4300)/900)**2*35;
-    if (z<-5650) h += Math.min(150, (-z-5650)/6) * (0.45+0.75*Math.max(0,fbm(x+900, z))); // broken, off-centre valley head
+    // Valley head: high and broken at the sides, but pinched to a low gorge
+    // on the axis (v2), so the far river stays visible past the strip.
+    if (z<-5650){ const gorge = Math.min(1, Math.max(0.22, (Math.abs(bx)-170)/260));
+      h += Math.min(150, (-z-5650)/6) * (0.45+0.75*Math.max(0,fbm(x+900, z))) * gorge; }
     const rd = Math.abs(x-riverX(z));
     if (rd<46 && Math.abs(bx)<380 && z>-4900) h = Math.min(h, 1.5); // river channel
     const lake = ((x-230)/190)**2 + ((z+3750)/230)**2;
@@ -41,10 +47,13 @@ const Terrain = (() => {
     if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
     // Medevac pads sit dead flat: the clearing pad at the valley floor's own
     // height, the hospital pad at airfield height beside the strip.
+    // v2: the flat radius must span several 60 m terrain-grid cells, or the
+    // pad mesh (drawn at the flat height) sinks under the un-flattened
+    // surface between grid vertices and can never be seen.
     const pd1 = Math.hypot(x-330, z+1400);
-    if (pd1<24) h = Math.min(h, 6); else if (pd1<38) h = Math.min(h, 6+(pd1-24)*0.5);
+    if (pd1<45) h = Math.min(h, 6); else if (pd1<85) h = Math.min(h, 6+(pd1-45)*0.35);
     const pd2 = Math.hypot(x-150, z+5400);
-    if (pd2<24) h = 10; else if (pd2<38) h = h*(pd2-24)/14 + 10*(1-(pd2-24)/14);
+    if (pd2<45) h = 10; else if (pd2<85) h = h*(pd2-45)/40 + 10*(1-(pd2-45)/40);
     return h;
   }
   // Height-gradient palette in one sunset family:
@@ -83,10 +92,11 @@ const Terrain = (() => {
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
       b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
     }
-    // The far reach, beyond the runway's far end.
-    for(let z=-5780; z>-6140; z-=40){ const cx=river2X(z), cx2=river2X(z-40);
-      b.quad([cx-26,2.1,z],[cx2-26,2.1,z-40],[cx2+26,2.1,z-40],[cx+26,2.1,z],[0.72,0.60,0.40]);
-      b.quad([cx-15,2.6,z],[cx2-15,2.6,z-40],[cx2+15,2.6,z-40],[cx+15,2.6,z],[0.12,0.42,0.80]); }
+    // The far reach, beyond the runway's far end (v2: wider and a brighter
+    // blue, so the winding river survives the cover's thumbnail test).
+    for(let z=-5700; z>-6140; z-=40){ const cx=river2X(z), cx2=river2X(z-40);
+      b.quad([cx-38,2.1,z],[cx2-38,2.1,z-40],[cx2+38,2.1,z-40],[cx+38,2.1,z],[0.72,0.60,0.40]);
+      b.quad([cx-26,2.6,z],[cx2-26,2.6,z-40],[cx2+26,2.6,z-40],[cx+26,2.6,z],[0.16,0.52,0.95]); }
     // Lake: flat disc + shore ring at the lake centre.
     { const lx=230, lz=-3750, SEG2=22;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;

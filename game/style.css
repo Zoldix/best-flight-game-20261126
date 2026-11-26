@@ -8,12 +8,16 @@
 #ringinfo,#distinfo{font-size:16px;color:#cfe8ff}
 #callout{font-size:17px;font-weight:bold;color:#ffd23f;margin-top:5px}
 .legend{font-size:12.5px;color:#9fc6ea;margin-top:5px}
-#left-panel{top:14px;right:14px;text-align:right}
-#right-panel{top:150px;right:14px;text-align:right}
+/* The three right-side readouts live in one flex column, so the stack can
+   never overlap: the VALLEY MAP panel always starts below the HEADING line,
+   however tall the readout panels grow (poster mode included). */
+#right-col{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+#left-panel{position:static;text-align:right}
+#right-panel{position:static;text-align:right}
 .label{font-size:13px;letter-spacing:2px;color:#8fd0ff}
 .big{font-size:36px;font-weight:bold;line-height:1.05}
 .mid{font-size:22px;font-weight:bold}
-#map-panel{top:288px;right:14px;text-align:center;padding:8px}
+#map-panel{position:static;text-align:center;padding:8px}
 #minimap{display:block;margin-top:4px;border-radius:6px}
 #sys-panel{bottom:14px;left:14px;width:330px;font-size:16px}
 #sys-panel .row{margin:5px 0}

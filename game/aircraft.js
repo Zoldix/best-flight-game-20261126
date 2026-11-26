@@ -7,7 +7,11 @@ const Aircraft = (() => {
   function build(){
     const b=Render.builder();
     const body=[0.98,0.32,0.10], dark=[0.22,0.20,0.24], cream=[1.0,0.94,0.84], glass=[0.20,0.55,0.90];
-    b.box(0,0,0.6, 1.5,1.5,5.2, body);            // fuselage
+    // Fuselage in three stepped, tapering segments (v2: a smoother,
+    // rounded-off silhouette than the single v1 slab, same overall size).
+    b.box(0,0,2.2, 1.15,1.15,1.9, body);           // rear fuselage (narrowest)
+    b.box(0,0,0.5, 1.5,1.5,2.2, body);             // mid fuselage
+    b.box(0,0.05,-1.2, 1.32,1.32,1.6, body);       // front fuselage (tapered)
     b.box(0,0.15,-2.4, 1.1,1.1,1.8, body);          // nose cowling
     b.box(0,0.95,-0.4, 1.15,0.75,1.9, glass);       // canopy
     b.box(0,0,0.4, 8.6,0.22,1.5, cream);            // main wing
