@@ -16,6 +16,16 @@ const resultsData = {time:'0.0', fuel:'0', score:0, why:'', rings:0};
 function terrainHit(){
   const g = Terrain.heightAt(plane.pos[0], plane.pos[2]);
   if (plane.pos[1] <= g+2.2){
+    // Medevac pads judge their own arrivals before the runway rules apply.
+    const pad = Missions.padTouch(plane, g);
+    if (pad && pad.event==='pickup'){
+      // Patient aboard: hop back into the air so the sortie can continue.
+      plane.pos[1] = g+2.3; plane.speed = Math.max(plane.speed, 26);
+      flashMsg='PATIENT ABOARD — FLY TO THE HOSPITAL PAD'; flashUntil=tick+210; AudioSys.chime();
+      return false;
+    }
+    if (pad && pad.result==='delivered'){ finishSortie('landed', pad.why); return true; }
+    if (pad && pad.result==='crash'){ finishSortie('crash', pad.why); Damage.hit(65,'PAD IMPACT'); return true; }
     const land = Missions.checkLanding(plane, g);
     if (land && land.result==='landed'){ finishSortie('landed', land.why); return true; }
     if (land && land.result==='landed-early'){ finishSortie('landed', land.why); return true; }
@@ -31,6 +41,10 @@ function finishSortie(kind, why){
   resultsData.time = ((tick-sortieStartTick)/60).toFixed(1);
   resultsData.fuel = Fuel.s.pct.toFixed(0);
   resultsData.rings = Missions.state.ringsPassed;
+  const mid = Missions.current.id;
+  resultsData.detail = mid==='survey' ? 'RINGS <b>'+resultsData.rings+' / 6</b>'
+    : mid==='fire' ? 'DROPS <b>'+Missions.state.drops+' / 2</b> · FIRE <b>'+Math.max(0,Missions.FIRE.hp)+'% LEFT</b>'
+    : 'PATIENT <b>'+(Missions.state.patient?'DELIVERED':'NOT REACHED')+'</b> · CLOCK <b>'+Missions.fmtClock(Missions.state.timeLeft)+' LEFT</b>';
   resultsData.why = why;
   resultsData.score = Missions.score(Fuel.s.pct, Damage.s.pct, tick-sortieStartTick);
   showScreen();
@@ -42,12 +56,17 @@ function showScreen(){
     document.getElementById('end-title').textContent =
       screen==='landed' ? 'SORTIE COMPLETE — LANDED' : screen==='crash' ? 'CRASHED' : 'SORTIE RESULTS';
     document.getElementById('end-stats').innerHTML =
-      '<div>TIME <b>'+resultsData.time+' S</b></div><div>RINGS <b>'+resultsData.rings+' / 6</b></div>'+
+      '<div>TIME <b>'+resultsData.time+' S</b></div><div>'+resultsData.detail+'</div>'+
       '<div>FUEL LEFT <b>'+resultsData.fuel+'%</b></div><div>DAMAGE <b>'+Damage.s.pct.toFixed(0)+'%</b></div>'+
       '<div>SCORE <b>'+resultsData.score+'</b></div><p class="why">'+resultsData.why+'</p>';
   }
 }
 function startSortie(){
+  Missions.reset();
+  plane.pos=[0,135,150]; plane.heading=0; plane.pitch=0; plane.roll=0;
+  plane.speed=62; plane.throttle=0.62; plane.vy=0;
+  Fuel.set(100); Damage.set(0);
+  Camera.reset(plane.pos);
   screen='fly'; sortieStartTick=tick; AudioSys.start(); showScreen();
 }
 function step(){
@@ -84,8 +103,12 @@ function step(){
   propAngle += plane.throttle*0.9 + 0.12;
   Fuel.burn(plane, DT); AudioSys.setThrottle(plane.throttle);
   if (Fuel.s.pct<=0){ plane.throttle=0; if (plane.speed<20 && plane.pos[1]-Terrain.heightAt(plane.pos[0],plane.pos[2])<4) finishSortie('crash','OUT OF FUEL — FORCED LANDING'); }
-  const ev = Missions.update(plane);
+  const ev = Missions.update(plane, tick-sortieStartTick);
   if (ev && ev.event==='ring'){ flashMsg='RING '+ev.n+' / 6 CLEAR!'; flashUntil=tick+150; AudioSys.chime(); }
+  if (ev && ev.event==='scoop'){ flashMsg='TANK FULL — DROP IT ON THE FIRE'; flashUntil=tick+180; AudioSys.chime(); }
+  if (ev && ev.event==='drop'){ flashMsg='DIRECT HIT — ONE MORE LOAD'; flashUntil=tick+180; AudioSys.chime(); }
+  if (ev && ev.event==='fireout'){ flashMsg='FIRE OUT — LAND ON RUNWAY 27'; flashUntil=tick+210; AudioSys.chime(); }
+  if (ev && ev.event==='timeout'){ finishSortie('crash','OUT OF TIME — THE PATIENT DID NOT MAKE IT'); return; }
   if (terrainHit()) return;
 }
 function modelMatrix(){
@@ -126,6 +149,7 @@ function frame(){
 }
 // ---- demo / seed presets for deterministic screenshots ----
 function applyPreset(name){
+  if (name==='cover'||name==='runway'||name==='results'||name==='title') Missions.select('survey');
   if (name==='cover'){ plane.pos=[6,140,-4780]; plane.heading=-0.01; plane.pitch=0.0; plane.speed=60; plane.throttle=0.50;
     for(let i=0;i<5;i++) Missions.rings[i].passed=true; Missions.state.ringsPassed=5;
     Fuel.set(54); Damage.set(9); screen='fly'; }
@@ -133,21 +157,49 @@ function applyPreset(name){
     for(const r of Missions.rings) r.passed=true; Missions.state.ringsPassed=6; Fuel.set(38); Damage.set(18); screen='fly'; }
   else if (name==='results'){ applyPresetSilent(); screen='results';
     resultsData.time='118.4'; resultsData.fuel='31'; resultsData.rings=6;
+    resultsData.detail='RINGS <b>6 / 6</b>';
     resultsData.why='CLEAN TOUCHDOWN — ALL 6 RINGS, VALLEY SURVEY COMPLETE';
     Missions.state.ringsPassed=6; Missions.state.landed=true; resultsData.score=Missions.score(31,18,118.4*60); showScreen(); }
   else if (name==='title'){ screen='title'; }
+  else if (name==='fire'){ Missions.select('fire'); Missions.state.stage='drop'; Missions.state.water=100;
+    plane.pos=[-350,120,-2350]; plane.heading=0.35; plane.pitch=-0.03; plane.speed=58; plane.throttle=0.5;
+    Fuel.set(61); Damage.set(4); screen='fly'; }
+  else if (name==='medevac'){ Missions.select('medevac'); Missions.state.stage='deliver'; Missions.state.patient=true;
+    Missions.state.timeLeft=142;
+    plane.pos=[90,60,-5050]; plane.heading=-0.05; plane.pitch=-0.05; plane.speed=44; plane.throttle=0.3;
+    Fuel.set(47); Damage.set(12); screen='fly'; }
   Camera.reset(plane.pos); showScreen();
 }
 function applyPresetSilent(){ plane.pos=[0,120,-4900]; plane.heading=0; plane.speed=48; Fuel.set(31); Damage.set(18); }
 window.__flight = { plane, step, renderFrame, applyPreset,
   get state(){ return {tick, screen, rings:Missions.state.ringsPassed, fuel:Fuel.s.pct, damage:Damage.s.pct,
     pos:[...plane.pos], speed:plane.speed}; } };
+// ---- mission select (title screen) ----
+function buildMissionCards(){
+  const wrap=document.getElementById('mission-cards');
+  wrap.innerHTML='';
+  Missions.LIST.forEach((m,i)=>{
+    const d=document.createElement('div');
+    d.className='card'+(Missions.current.id===m.id?' sel':'');
+    d.id='card-'+m.id;
+    d.innerHTML='<div class="cnum">SORTIE '+(i+1)+'</div><div class="cname">'+m.name+'</div>'+
+      '<div class="csub">'+m.sub+'</div><p class="cbrief">'+m.brief+'</p>';
+    d.addEventListener('click', ()=>selectMission(m.id));
+    wrap.appendChild(d);
+  });
+}
+function selectMission(id){
+  Missions.select(id);
+  for (const m of Missions.LIST) document.getElementById('card-'+m.id).classList.toggle('sel', m.id===id);
+}
 function boot(){
   Render.init(document.getElementById('gl'));
   terrainMesh=Terrain.build(); skyMesh=Terrain.buildSky(); planeMesh=Aircraft.build(); propMesh=Aircraft.buildPropeller();
   ringMeshActive=Missions.buildRingMesh(true); ringMeshIdle=Missions.buildRingMesh(false);
   Instruments.init();
+  buildMissionCards();
   addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true;
+    if (screen==='title' && ['1','2','3'].includes(e.key)) selectMission(Missions.LIST[Number(e.key)-1].id);
     if ((e.key==='Enter'||e.key===' ') && screen==='title'){ e.preventDefault(); startSortie(); }
     if (e.key.toLowerCase()==='r' && (screen==='crash'||screen==='landed')) location.search='?seed='+SEED; });
   addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });

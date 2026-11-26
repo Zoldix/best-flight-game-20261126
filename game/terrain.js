@@ -39,6 +39,12 @@ const Terrain = (() => {
     if (lake<1) h = Math.min(h, 2.0); // lake bed
     const rb = runwayBlend(x,z); if (rb>0) h = h*(1-rb)+10*rb;
     if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
+    // Medevac pads sit dead flat: the clearing pad at the valley floor's own
+    // height, the hospital pad at airfield height beside the strip.
+    const pd1 = Math.hypot(x-330, z+1400);
+    if (pd1<24) h = Math.min(h, 6); else if (pd1<38) h = Math.min(h, 6+(pd1-24)*0.5);
+    const pd2 = Math.hypot(x-150, z+5400);
+    if (pd2<24) h = 10; else if (pd2<38) h = h*(pd2-24)/14 + 10*(1-(pd2-24)/14);
     return h;
   }
   // Height-gradient palette in one sunset family:
@@ -119,6 +125,29 @@ const Terrain = (() => {
       if(s[0]) seg(0,0,w,th); if(s[1]) seg(w-th,0,w,hh/2); if(s[2]) seg(w-th,hh/2,w,hh);
       if(s[3]) seg(0,hh-th,w,hh); if(s[4]) seg(0,hh/2,th,hh); if(s[5]) seg(0,0,th,hh/2); if(s[6]) seg(0,hh/2-th/2,w,hh/2+th/2); }
     digit('2', -29, -5245); digit('7', 4, -5245);
+    // ---- the forest fire (Scoop & Drop): flame cones + a smoke column ----
+    { const fx=-430, fz=-2550, gy=heightAt(fx,fz), fr=makeRng(99);
+      for(let i=0;i<9;i++){ const ox=(fr()*2-1)*34, oz=(fr()*2-1)*34, fh=14+fr()*20, fw=7+fr()*6;
+        const base=heightAt(fx+ox,fz+oz);
+        b.tri([fx+ox-fw,base,fz+oz],[fx+ox+fw,base,fz+oz],[fx+ox,base+fh,fz+oz],[1.0,0.42,0.06]);
+        b.tri([fx+ox,base,fz+oz-fw],[fx+ox,base,fz+oz+fw],[fx+ox,base+fh*0.8,fz+oz],[1.0,0.62,0.10]);
+        b.tri([fx+ox-fw*0.5,base,fz+oz],[fx+ox+fw*0.5,base,fz+oz],[fx+ox,base+fh*0.55,fz+oz],[1.0,0.85,0.25]); }
+      for(let i=0;i<5;i++){ const sy=gy+26+i*17, ss=13+i*4.5;
+        b.box(fx+(fr()*2-1)*8 - i*3, sy, fz+(fr()*2-1)*8, ss,sy*0+13,ss*0.8, [0.32,0.30,0.32]); }
+      // scorched earth under the flames
+      for(let i=0;i<10;i++){ const a1=i/10*Math.PI*2, a2=(i+1)/10*Math.PI*2;
+        b.tri([fx,gy+0.25,fz],[fx+Math.cos(a1)*52,gy+0.25,fz+Math.sin(a1)*52],[fx+Math.cos(a2)*52,gy+0.25,fz+Math.sin(a2)*52],[0.16,0.13,0.11]); } }
+    // ---- medevac pads: dark disc, white cross, amber corner lights ----
+    function pad(cx,cz){
+      const gy=heightAt(cx,cz), SEG2=20;
+      for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
+        b.tri([cx,gy+0.3,cz],[cx+Math.cos(a1)*26,gy+0.3,cz+Math.sin(a1)*26],[cx+Math.cos(a2)*26,gy+0.3,cz+Math.sin(a2)*26],[0.13,0.14,0.17]); }
+      b.quad([cx-3,gy+0.45,cz-13],[cx-3,gy+0.45,cz+13],[cx+3,gy+0.45,cz+13],[cx+3,gy+0.45,cz-13],[0.95,0.95,0.92]);
+      b.quad([cx-13,gy+0.45,cz-3],[cx-13,gy+0.45,cz+3],[cx+13,gy+0.45,cz+3],[cx+13,gy+0.45,cz-3],[0.95,0.95,0.92]);
+      for(const [ox,oz] of [[-24,-24],[24,-24],[-24,24],[24,24]]) b.box(cx+ox,gy+1.2,cz+oz,2.2,2.2,2.2,[1.0,0.80,0.30]);
+    }
+    pad(330,-1400);   // clearing pickup pad
+    pad(150,-5400);   // hospital helipad, beside the strip
     return b.build();
   }
   // ---- sky: gradient dome + radial-gradient sun + clouds, one sunset palette ----

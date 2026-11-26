@@ -24,16 +24,40 @@ const Instruments = (() => {
     el.fuelpct.textContent = Fuel.s.pct.toFixed(0)+'%';
     bar(el.dmgbar, Damage.s.pct, Damage.s.pct>60?'#ff4444':'#ff9040');
     el.dmgpct.textContent = Damage.s.pct.toFixed(0)+'%';
-    const n = Missions.state.ringsPassed;
-    el.mission.textContent = 'VALLEY SURVEY — RING '+Math.min(6,n+ (n<6?1:6))+' / 6';
-    const nr = Missions.nextRing();
-    if (nr){ const d=Math.hypot(plane.pos[0]-nr.x, plane.pos[2]-nr.z);
-      el.ringinfo.textContent='NEXT RING '+Math.round(d)+' M AHEAD';
-      el.distinfo.textContent='RUNWAY '+Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)))+' M NORTH';
-      el.callout.textContent = d<420 ? '► RING AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN RING';
-    } else { el.ringinfo.textContent='ALL RINGS CLEAR — LAND NOW';
-      el.distinfo.textContent='RUNWAY '+Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)))+' M — SLOW TO <46 KT';
-      el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
+    const S = Missions.state, mid = Missions.current.id;
+    const runwayDist = Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)));
+    if (mid==='survey'){
+      const n = S.ringsPassed;
+      el.mission.textContent = 'VALLEY SURVEY — RING '+Math.min(6,n+(n<6?1:6))+' / 6';
+      const nr = Missions.nextRing();
+      if (nr){ const d=Math.hypot(plane.pos[0]-nr.x, plane.pos[2]-nr.z);
+        el.ringinfo.textContent='NEXT RING '+Math.round(d)+' M AHEAD';
+        el.distinfo.textContent='RUNWAY '+runwayDist+' M NORTH';
+        el.callout.textContent = d<420 ? '► RING AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN RING';
+      } else { el.ringinfo.textContent='ALL RINGS CLEAR — LAND NOW';
+        el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
+        el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
+    } else if (mid==='fire'){
+      el.mission.textContent = 'SCOOP & DROP — '+(S.stage==='scoop'?'FILL THE TANK':S.stage==='drop'?'WATER AWAY ON THE FIRE':'FIRE OUT — LAND');
+      if (S.stage==='scoop'){ const d=Math.hypot(plane.pos[0]-Missions.LAKE.x, plane.pos[2]-Missions.LAKE.z);
+        el.ringinfo.textContent='LAKE '+Math.round(d)+' M — SKIM LOW & STEADY';
+        el.distinfo.textContent='TANK '+(S.water>0?S.water+'%':'EMPTY')+' · FIRE '+Math.max(0,Missions.FIRE.hp)+'% BURNING';
+        el.callout.textContent='► SKIM THE LAKE BELOW 9 M TO SCOOP ◄';
+      } else if (S.stage==='drop'){ const d=Math.hypot(plane.pos[0]-Missions.FIRE.x, plane.pos[2]-Missions.FIRE.z);
+        el.ringinfo.textContent='FIRE '+Math.round(d)+' M — FLY OVER IT LOW';
+        el.distinfo.textContent='TANK 100% · DROPS '+S.drops+' / 2 · FIRE '+Math.max(0,Missions.FIRE.hp)+'%';
+        el.callout.textContent = d<300 ? '► OVER THE FIRE — WATER AWAY ◄' : 'CARRY THE WATER TO THE ORANGE FLAMES';
+      } else { el.ringinfo.textContent='ALL LOADS AWAY — FIRE OUT';
+        el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
+        el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
+    } else {
+      el.mission.textContent = 'MEDEVAC — '+(S.stage==='pickup'?'PICK UP THE PATIENT':'PATIENT ABOARD — DELIVER');
+      const pad = S.stage==='pickup' ? Missions.PICKUP_PAD : Missions.HOSPITAL_PAD;
+      const d=Math.hypot(plane.pos[0]-pad.x, plane.pos[2]-pad.z);
+      el.ringinfo.textContent='CLOCK '+Missions.fmtClock(S.timeLeft)+(S.timeLeft<60?' — HURRY':'');
+      el.distinfo.textContent=(S.stage==='pickup'?'PICKUP PAD ':'HOSPITAL PAD ')+Math.round(d)+' M — LAND ON THE CROSS';
+      el.callout.textContent = d<420 ? '► PAD AHEAD — SET HER DOWN GENTLY ◄' : 'FOLLOW THE MAP TO THE WHITE CROSS';
+    }
     drawHorizon(plane);
     drawMinimap(plane);
   }
@@ -69,6 +93,11 @@ const Instruments = (() => {
     c.fillStyle='#3f9be0'; c.beginPath(); c.arc(mx(230),mz(-3750),9,0,Math.PI*2); c.fill();
     // runway: a white slot near the north end
     c.fillStyle='#f2f2f2'; c.fillRect(mx(0)-2, mz(-5720), 4, mz(-5080)-mz(-5720));
+    // the fire (Scoop & Drop) and the two medevac pads
+    c.fillStyle = Missions.FIRE.hp>0 ? '#ff5a1f' : '#7d8a99';
+    c.beginPath(); c.arc(mx(Missions.FIRE.x), mz(Missions.FIRE.z), 4, 0, Math.PI*2); c.fill();
+    c.fillStyle='#ffffff';
+    for (const p of [Missions.PICKUP_PAD, Missions.HOSPITAL_PAD]) c.fillRect(mx(p.x)-2.5, mz(p.z)-2.5, 5, 5);
     // rings: passed grey, next green, later gold
     Missions.rings.forEach((r,i)=>{
       c.fillStyle = r.passed ? '#7d8a99' : (i===Missions.state.ringsPassed ? '#39ff6e' : '#ffb020');

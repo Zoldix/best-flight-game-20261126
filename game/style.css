@@ -24,10 +24,17 @@
 .center{text-align:center}
 .controls{font-size:12px;color:#9fc6ea;margin-top:4px;max-width:230px}
 #flash{position:absolute;top:110px;left:50%;transform:translateX(-50%);font-size:40px;font-weight:bold;color:#5cff8a;text-shadow:2px 2px 6px #000}
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,28,.66);color:#eaf4ff;text-align:center;padding:20px}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,28,.85);color:#eaf4ff;text-align:center;padding:20px}
 .screen h1{font-size:64px;margin:0 0 6px;letter-spacing:3px;text-shadow:3px 3px 10px #000}
 .sub{font-size:24px;color:#ffd23f;font-weight:bold;margin:2px}
 .brief{font-size:19px;max-width:640px;line-height:1.45}
+#mission-cards{display:flex;gap:14px;margin:16px 0 20px;max-width:1060px}
+.card{flex:1;background:rgba(6,20,38,.78);border:2px solid rgba(140,200,255,.45);border-radius:12px;padding:14px 16px;text-align:left;cursor:pointer;pointer-events:auto}
+.card.sel{border-color:#ffd23f;background:rgba(20,80,143,.88);box-shadow:0 0 18px rgba(255,210,63,.35)}
+.cnum{font-size:12px;letter-spacing:3px;color:#8fd0ff}
+.cname{font-size:25px;font-weight:bold;margin:3px 0;color:#fff}
+.csub{font-size:13.5px;font-weight:bold;color:#ffd23f}
+.cbrief{font-size:14.5px;line-height:1.4;color:#cfe8ff;margin:7px 0 2px}
 #start-btn{font-size:24px;font-weight:bold;padding:14px 34px;border-radius:10px;border:3px solid #ffd23f;background:#14508f;color:#fff;cursor:pointer;pointer-events:auto}
 .keys{font-size:15px;color:#b9d9f5}
 #end-stats{font-size:26px;line-height:1.6}
