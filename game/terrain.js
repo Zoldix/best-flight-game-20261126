@@ -221,6 +221,28 @@ const Terrain = (() => {
       b.box(-172,3.8,-4980,5,7.6,10,pier); b.box(-104,3.8,-4980,5,7.6,10,pier);
       b.box(-138,9.6,-4986,118,1.8,1.2,deck); b.box(-138,9.6,-4974,118,1.8,1.2,deck);
     }
+    // v4 cover detail in the approach corridor (z -4400..-5050, the ground
+    // the cover frame actually shows): a farmstead west of the river —
+    // barn, silo, house — and a denser tree line along both banks, so the
+    // foreground has landmarks at chase distance instead of bare grass.
+    { const fw=[0.62,0.58,0.52], froof=[0.55,0.22,0.14];
+      const by=heightAt(-215,-4620);
+      b.box(-215,by+4,-4620,20,8,13,fw); b.box(-215,by+8.7,-4620,22,1.6,15,froof);   // barn
+      b.box(-188,by+7,-4608,4.5,14,4.5,[0.78,0.76,0.72]);                            // silo
+      b.box(-188,by+14.6,-4608,5.4,1.2,5.4,[0.40,0.38,0.40]);                         // silo cap
+      const hy=heightAt(-168,-4705);
+      b.box(-168,hy+3,-4705,11,6,9,[0.92,0.88,0.78]); b.box(-168,hy+6.6,-4705,13,1.4,11,[0.32,0.28,0.28]); // farmhouse
+      const tr2=makeRng(2027);
+      for(let i=0;i<46;i++){ const side=i%2? 1:-1, tx=side*(95+tr2()*85), tz=-4420-tr2()*600;
+        if (Math.abs(tx-riverX(tz))<52 || runwayBlend(tx,tz)>0) continue;
+        const th=heightAt(tx,tz), s=7.5+tr2()*6.5, g=tr2()<0.5?[0.08,0.32,0.12]:[0.14,0.42,0.16];
+        b.box(tx,th+2,tz,1.6,4,1.6,[0.36,0.24,0.12]);
+        b.tri([tx-s,th+3,tz],[tx+s,th+3,tz],[tx,th+3+s*1.7,tz],g);
+        b.tri([tx,th+3,tz-s],[tx,th+3,tz+s],[tx,th+3+s*1.7,tz],g); } }
+    // Approach light bars on the centreline before the threshold: five
+    // white bars the final approach flies over, depth cues in the cover.
+    for(let i=0;i<5;i++){ const az=-4995-i*22;
+      b.box(0,11.2,az,16,1.1,2.6,[1.0,0.97,0.88]); }
     pad(150,-5400);   // hospital helipad, beside the strip
     return b.build();
   }
@@ -257,12 +279,15 @@ const Terrain = (() => {
       const top=[0.99,0.80,0.74], under=[0.74,0.52,0.60];
       for(let k=0;k<6;k++){ const ox=(cr()*2-1)*s*0.8, oz=(cr()*2-1)*s*0.35, oy=(cr()*0.6)*20, w=45+cr()*55;
         b.box(cx+ox,cy+oy,cz+oz, w,26+cr()*20,w*0.7, k%2? top: under); } }
-    // Hero clouds placed in the northern view corridor, so the screenshots
-    // that matter actually contain clouds.
-    const hero=[[-380,430,-5650],[430,505,-6000],[-60,395,-5300],[150,470,-5550]];
-    for(const [hx,hy,hz] of hero){ const hr=makeRng(Math.abs(hx)+Math.abs(hz));
-      for(let k=0;k<7;k++){ const ox=(hr()*2-1)*55, oz=(hr()*2-1)*22, oy=(hr()*2-1)*17, w=36+hr()*48;
-        b.box(hx+ox,hy+oy,hz+oz, w,26+hr()*20,w*0.7, k%2? [0.99,0.80,0.74]:[0.74,0.52,0.60]); } }
+    // v4: the old hero clouds sat in the northern view corridor as chunky
+    // pink boxes that landed on the cover as flat rectangles swallowing the
+    // sun. They are gone. In their place, two long, thin, high cloud bands
+    // far out at the frame's edges — wide and flat, so they read as distant
+    // sunset strata instead of floating blocks, and the sun stays clear.
+    for(const [hx,hy,hz,seed] of [[-1500,690,-6100,31],[1550,760,-6250,47]]){
+      const hr=makeRng(seed);
+      for(let k=0;k<5;k++){ const ox=(hr()*2-1)*160, oz=(hr()*2-1)*30, oy=(hr()*2-1)*10, w=150+hr()*130;
+        b.box(hx+ox,hy+oy,hz+oz, w,13+hr()*8,w*0.32, k%2? [0.97,0.76,0.70]:[0.80,0.58,0.62]); } }
     return b.build();
   }
   return {heightAt, build, buildSky, riverX};

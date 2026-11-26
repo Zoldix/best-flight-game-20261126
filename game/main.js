@@ -171,13 +171,18 @@ function frame(){
 // ---- demo / seed presets for deterministic screenshots ----
 function applyPreset(name){
   if (name==='cover'||name==='runway'||name==='results'||name==='title') Missions.select('survey');
-  if (name==='cover'){ plane.pos=[6,140,-4780]; plane.heading=-0.01; plane.pitch=0.0; plane.speed=60; plane.throttle=0.50;
+  if (name==='cover'){ plane.pos=[-24,138,-4620]; plane.heading=0.02; plane.pitch=-0.02; plane.roll=0.22; plane.speed=58; plane.throttle=0.52;
     for(let i=0;i<5;i++) Missions.rings[i].passed=true; Missions.state.ringsPassed=5;
     Fuel.set(54); Damage.set(9); screen='fly';
     // Poster treatment: closer chase camera (bigger plane), enlarged HUD
     // type, and a one-line callout that names all three sortie systems.
+    // v4 pose: lower and west of the old centreline shot, banked toward the
+    // last ring — the plane sits big in the left third, the green ring is
+    // clear of the wing on the right, and the runway, farmstead and river
+    // fill the frame ahead. The shot recipe steps only a few ticks, before
+    // the flight model settles the bank out (the medevac recipe's trick).
     document.body.classList.add('poster');
-    Camera.setDist(6.2);
+    Camera.setDist(5.2);
     window.__flightPoster='3 SORTIES · SURVEY · FIRE · MEDEVAC'; }
   else if (name==='runway'){ plane.pos=[6,36,-4995]; plane.heading=-0.03; plane.pitch=-0.06; plane.speed=47; plane.throttle=0.30;
     for(const r of Missions.rings) r.passed=true; Missions.state.ringsPassed=6; Fuel.set(38); Damage.set(18); screen='fly'; }
