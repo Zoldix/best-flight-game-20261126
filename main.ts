@@ -28,7 +28,7 @@ const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 // each one no larger than the 256 KiB the gate allows. The game folder must
 // stay a plain static site: at most 993 files, every path short enough for the
 // intake, and an index.html at its root that the browser opens directly.
-const SHOT_NAMES = ['1-cover.png', '2-runway.png', '3-results.png', '4-title.png'];
+const SHOT_NAMES = ['1-cover.png', '2-title.png', '3-fire.png', '4-results.png'];
 const SHOT_MAX_BYTES = 262144;
 const GAME_MAX_FILES = 993;
 
