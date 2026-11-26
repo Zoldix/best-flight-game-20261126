@@ -178,7 +178,7 @@ function applyPreset(name){
     // type, and a one-line callout that names all three sortie systems.
     document.body.classList.add('poster');
     Camera.setDist(6.2);
-    window.__flightPoster='3 SORTIES — SURVEY · FIRE · MEDEVAC'; }
+    window.__flightPoster='3 SORTIES · SURVEY · FIRE · MEDEVAC'; }
   else if (name==='runway'){ plane.pos=[6,36,-4995]; plane.heading=-0.03; plane.pitch=-0.06; plane.speed=47; plane.throttle=0.30;
     for(const r of Missions.rings) r.passed=true; Missions.state.ringsPassed=6; Fuel.set(38); Damage.set(18); screen='fly'; }
   else if (name==='results'){ applyPresetSilent(); screen='results';

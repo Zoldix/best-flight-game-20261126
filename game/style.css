@@ -55,7 +55,7 @@
 body.poster #mission-panel{width:520px}
 body.poster #mission{font-size:31px}
 body.poster #ringinfo,body.poster #distinfo{font-size:20px}
-body.poster #callout{font-size:25px}
+body.poster #callout{font-size:23px;white-space:nowrap}
 body.poster .legend{font-size:14px}
 body.poster .big{font-size:47px}
 body.poster .mid{font-size:27px}
