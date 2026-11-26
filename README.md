@@ -7,24 +7,34 @@
 Entry for the [make.fun competition "Make the best flight game"](https://make.fun/bounty/best-flight-game-20261126-0057) ($500, deadline 28 Nov 2026 07:57 WIB).
 
 A 3D chase-view flight game written in raw WebGL (own shaders, no library, no
-network). Fly a prop plane built from parts down a sunset valley: thread six
-rings in order, watch fuel burn and damage, then land on the marked runway
-"27" — centreline dashes, threshold piano bars, touchdown bars, edge lights —
-slower than 46 KT with a gentle sink. A winding river, a lake, faceted
-mountains lit warm on the sun side and cool in shade, a gradient sunset sky.
+network). One sunset valley, three sorties, picked from the mission-select
+screen:
+
+1. **Valley Survey** — thread six rings down the valley in order, then land.
+2. **Scoop & Drop** — skim the lake low to fill the water tank, drop two loads
+   on the forest fire on the west slope, then land.
+3. **Medevac** — land on the clearing pad, take the patient aboard, and reach
+   the hospital helipad before the 5:00 clock runs out.
+
+Every landing is on the marked runway "27" — centreline dashes, threshold
+piano bars, touchdown bars, edge lights — or on a marked pad, slower than
+46 KT with a gentle sink, and every touchdown is graded **SMOOTH / FIRM /
+MISSED** with a **GOLD / SILVER / BRONZE** medal per sortie. A winding river,
+a lake, faceted mountains lit warm on the sun side and cool in shade, a
+gradient sunset sky.
 
 ## How to play
 
-- **Enter** — start the sortie · **R** — fly again
+- **1 / 2 / 3 or click** — pick a sortie · **Enter** — fly it · **R** — fly again
 - **W / ↑** climb · **S / ↓** dive · **A / D** bank and turn
 - **Shift / C** — throttle up / down · **mouse** — steer
-- Land with all 6 rings, under 46 KT, gentle sink, for the best score
+- Finish the sortie's job, land under 46 KT with a gentle sink, earn the medal
 
-The HUD shows altitude, vertical speed, airspeed, heading, throttle, fuel,
-damage, an artificial horizon, and a mission panel with the next ring and the
-runway distance. Title screen, sortie results, and crash/landing screens are
-all in the game. Sound is synthesized live (engine hum, ring chime) — no audio
-files.
+The HUD shows altitude, vertical speed, airspeed, heading, throttle, fuel and
+damage bars, gear and flap state, low-fuel and stall warnings, an artificial
+horizon, a north-up minimap (rings, river, lake, fire, pads, runway), and a
+mission panel that briefs the current stage. Sound is synthesized live
+(engine hum, chime) — no audio files.
 
 ## Run it
 
