@@ -196,6 +196,24 @@ const Terrain = (() => {
       for(const [ox,oz] of [[-36,-36],[36,-36],[-36,36],[36,36]]) b.box(cx+ox,gy+1.2,cz+oz,2.6,2.6,2.6,[1.0,0.80,0.30]);
     }
     pad(330,-1400);   // clearing pickup pad
+    // Airfield buildings east of the strip (round 6, from the user's
+    // reference): two hangars, a control tower with a red beacon, and one
+    // small block on the west side — plain boxes on the plateau (y=10).
+    { const wall=[0.55,0.52,0.48], roof=[0.30,0.28,0.30];
+      b.box(100,15,-5260,34,10,20,wall); b.box(100,20.8,-5260,36,1.6,22,roof);
+      b.box(100,15,-5450,34,10,20,wall); b.box(100,20.8,-5450,36,1.6,22,roof);
+      b.box(128,23,-5580,7,26,7,[0.62,0.60,0.56]);           // tower shaft
+      b.box(128,38.5,-5580,12,5,12,[0.20,0.30,0.42]);        // tower cab
+      b.box(128,42,-5580,2.4,2,2.4,[1.0,0.20,0.20]);         // beacon
+      b.box(-88,14,-5360,22,8,16,wall); b.box(-88,18.6,-5360,24,1.4,18,roof);
+    }
+    // A bridge where the foreground river swings west (round 6): deck on
+    // two piers with low rails, crossing the river at z -4980, x about -138.
+    { const deck=[0.42,0.40,0.38], pier=[0.36,0.34,0.32];
+      b.box(-138,7.6,-4980,118,2.2,13,deck);
+      b.box(-172,3.8,-4980,5,7.6,10,pier); b.box(-104,3.8,-4980,5,7.6,10,pier);
+      b.box(-138,9.6,-4986,118,1.8,1.2,deck); b.box(-138,9.6,-4974,118,1.8,1.2,deck);
+    }
     pad(150,-5400);   // hospital helipad, beside the strip
     return b.build();
   }

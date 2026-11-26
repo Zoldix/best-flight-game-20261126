@@ -7,9 +7,36 @@ const Instruments = (() => {
   const el = {};
   function init(){
     for (const id of ['alt','spd','hdg','thrbar','fuelbar','dmgbar','fuelpct','dmgpct','thrval',
-      'mission','ringinfo','distinfo','callout','vspeed','gearmsg','warnline']) el[id]=document.getElementById(id);
+      'mission','ringinfo','distinfo','callout','vspeed','geartext','warnline']) el[id]=document.getElementById(id);
     el.horizon = document.getElementById('horizon').getContext('2d');
     el.map = document.getElementById('minimap').getContext('2d');
+    el.tape = document.getElementById('tape').getContext('2d');
+  }
+  // Compass tape (round 6, adapted from the user's reference): a sliding
+  // heading strip under a fixed caret, cardinals as letters, degrees every
+  // 30, ticks every 10 — the readout box in the middle repeats the heading.
+  function drawTape(hdg){
+    const c=el.tape, W=260, H=32, cx=W/2, pxPerDeg=2.6;
+    c.clearRect(0,0,W,H);
+    c.fillStyle='#081426'; c.fillRect(0,0,W,H); // opaque: a blended strip
+    // keeps the terrain's PNG entropy alive underneath the ticks
+    c.strokeStyle='#7fd4ff'; c.fillStyle='#cfe9ff'; c.font='10px monospace'; c.textAlign='center';
+    const names={0:'N',90:'E',180:'S',270:'W'};
+    for(let d=-60; d<=60; d+=5){
+      const base=Math.round(hdg/5)*5 + d;
+      const shown=((base%360)+360)%360;
+      const x=cx+(base-hdg)*pxPerDeg;
+      if (x<4||x>W-4) continue;
+      const big=shown%30===0, mid=shown%10===0;
+      c.beginPath(); c.moveTo(x,H-2); c.lineTo(x,H-2-(big?13:mid?9:5)); c.stroke();
+      if (names[shown]) c.fillText(names[shown], x, 12); // cardinals only:
+      // degree numerals cost more PNG bytes than they tell a screenshot
+    }
+    c.fillStyle='#ffb020'; c.beginPath(); c.moveTo(cx-5,0); c.lineTo(cx+5,0); c.lineTo(cx,7); c.fill();
+    c.fillStyle='#0a1a2c'; c.fillRect(cx-21,H-15,42,13);
+    c.strokeStyle='#7fd4ff'; c.strokeRect(cx-21,H-15,42,13);
+    c.fillStyle='#ffffff'; c.font='bold 10px monospace';
+    c.fillText(String(Math.round(hdg)).padStart(3,'0')+'°', cx, H-5);
   }
   function bar(node, pct, color){ node.style.width=Math.max(0,Math.min(100,pct))+'%'; node.style.background=color; }
   function update(plane, tick){
@@ -28,7 +55,8 @@ const Instruments = (() => {
     // read off the airspeed the way a pilot would schedule it; the warning
     // line speaks only when something is actually wrong.
     const flaps = plane.speed<40 ? 'FULL' : plane.speed<56 ? 'APPROACH' : 'CRUISE';
-    el.gearmsg.textContent = 'GEAR DN · FLAPS '+flaps;
+    el.geartext.textContent = 'GEAR DN · FLAPS '+flaps;
+    drawTape(hdgDeg);
     const agl = plane.pos[1]-Terrain.heightAt(plane.pos[0], plane.pos[2]);
     el.warnline.textContent =
       Fuel.s.pct<25 ? (tick%70<42 ? '⚠ LOW FUEL — LAND SOON' : '') :

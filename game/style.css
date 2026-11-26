@@ -15,6 +15,9 @@
 #left-panel{position:static;text-align:right}
 #right-panel{position:static;text-align:right}
 .label{font-size:13px;letter-spacing:2px;color:#8fd0ff}
+.label svg,.row svg.ic,#gearmsg svg.ic{width:13px;height:13px;vertical-align:-2px;margin-right:5px;stroke:#8fd0ff;fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+#tape-panel{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:5px 6px 2px}
+#tape{display:block}
 .big{font-size:36px;font-weight:bold;line-height:1.05}
 .mid{font-size:22px;font-weight:bold}
 #map-panel{position:static;text-align:center;padding:8px}
