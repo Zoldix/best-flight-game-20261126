@@ -97,6 +97,9 @@ const Terrain = (() => {
       const bank=[0.72,0.60,0.40], water=[0.12,0.42,0.80], wy=2.6;
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
       b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
+      // Sun glint: a narrow gold lane down the foreground reach, where the
+      // low sun reflects off the water in the cover view (round 4).
+      if (z<=-4360) b.quad([cx-6.5,wy+0.18,z],[cx2-6.5,wy+0.18,z-40],[cx2+6.5,wy+0.18,z-40],[cx+6.5,wy+0.18,z],[1.0,0.72,0.30]);
     }
     // The far reach, beyond the runway's far end (v2: wider and a brighter
     // blue, so the winding river survives the cover's thumbnail test).
@@ -108,15 +111,32 @@ const Terrain = (() => {
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
         b.tri([lx,2.6,lz],[lx+Math.cos(a1)*205,2.1,lz+Math.sin(a1)*245],[lx+Math.cos(a2)*205,2.1,lz+Math.sin(a2)*245],[0.74,0.62,0.42]);
         b.tri([lx,2.7,lz],[lx+Math.cos(a1)*168,2.7,lz+Math.sin(a1)*200],[lx+Math.cos(a2)*168,2.7,lz+Math.sin(a2)*200],[0.12,0.44,0.82]); } }
-    // Trees: trunk + two crossed conifer triangles, kept out of the river and
-    // off the airfield plateau.
+    // Trees: trunk + two crossed conifer triangles, kept out of the river,
+    // the lake and off the airfield plateau. Round 4: denser (330) with two
+    // canopy greens, plus low bushes, so the valley floor reads as forest.
     const tr=makeRng(777);
-    for(let i=0;i<190;i++){ const x=(tr()*2-1)*300, z=200-tr()*5600;
-      if (Math.abs(x-riverX(z))<60 || runwayBlend(x,z)>0) continue;
-      const h=heightAt(x,z), s=7+tr()*7;
+    const inLake=(x,z)=>(((x-230)/190)**2+((z+3750)/230)**2)<1.3;
+    for(let i=0;i<330;i++){ const x=(tr()*2-1)*300, z=200-tr()*5600;
+      if (Math.abs(x-riverX(z))<60 || runwayBlend(x,z)>0 || inLake(x,z)) continue;
+      const h=heightAt(x,z), s=7+tr()*7, g=tr()<0.5?[0.08,0.32,0.12]:[0.13,0.40,0.15];
       b.box(x,h+2,z,1.6,4,1.6,[0.36,0.24,0.12]);
-      b.tri([x-s,h+3,z],[x+s,h+3,z],[x,h+3+s*1.7,z],[0.08,0.32,0.12]);
-      b.tri([x,h+3,z-s],[x,h+3,z+s],[x,h+3+s*1.7,z],[0.11,0.38,0.14]);
+      b.tri([x-s,h+3,z],[x+s,h+3,z],[x,h+3+s*1.7,z],g);
+      b.tri([x,h+3,z-s],[x,h+3,z+s],[x,h+3+s*1.7,z],g);
+    }
+    for(let i=0;i<130;i++){ const x=(tr()*2-1)*320, z=200-tr()*5600;
+      if (Math.abs(x-riverX(z))<48 || runwayBlend(x,z)>0 || inLake(x,z)) continue;
+      const h=heightAt(x,z), w=2.6+tr()*2.4;
+      b.box(x,h+1.1,z,w,2.2+tr()*1.4,w*0.8,tr()<0.5?[0.10,0.34,0.13]:[0.16,0.42,0.16]);
+    }
+    // Valley mist (round 4): broken pale patches pooling on the valley
+    // floor, never one full-width sheet — a single sheet read as a solid
+    // slab from a low camera, so the mist is laid as offset clusters.
+    for(const [mz,tone] of [[-700,[0.90,0.76,0.74]],[-1500,[0.93,0.79,0.77]],[-2900,[0.94,0.81,0.79]],[-4300,[0.93,0.80,0.77]],[-5980,[0.95,0.83,0.81]]]){
+      const cx=valleyBend(mz)*0.8, gy=heightAt(cx,mz);
+      for(const [ox,pw,pd,py] of [[-190,300,95,7],[-30,230,70,11],[130,280,85,8],[265,190,60,12],[-300,170,55,12]]){
+        const px=cx+ox;
+        b.quad([px-pw/2,gy+py,mz-pd/2],[px-pw/2,gy+py,mz+pd/2],[px+pw/2,gy+py,mz+pd/2],[px+pw/2,gy+py,mz-pd/2],tone);
+      }
     }
     // ---- runway: strip + BIG white markings readable from final approach ----
     const ry=10.4, my=11.3, W=[1.0,1.0,0.98];
