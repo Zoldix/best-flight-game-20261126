@@ -7,7 +7,7 @@ const Instruments = (() => {
   const el = {};
   function init(){
     for (const id of ['alt','spd','hdg','thrbar','fuelbar','dmgbar','fuelpct','dmgpct','thrval',
-      'mission','ringinfo','distinfo','callout','vspeed','gearmsg']) el[id]=document.getElementById(id);
+      'mission','ringinfo','distinfo','callout','vspeed','gearmsg','warnline']) el[id]=document.getElementById(id);
     el.horizon = document.getElementById('horizon').getContext('2d');
     el.map = document.getElementById('minimap').getContext('2d');
   }
@@ -24,6 +24,15 @@ const Instruments = (() => {
     el.fuelpct.textContent = Fuel.s.pct.toFixed(0)+'%';
     bar(el.dmgbar, Damage.s.pct, Damage.s.pct>60?'#ff4444':'#ff9040');
     el.dmgpct.textContent = Damage.s.pct.toFixed(0)+'%';
+    // Configuration + warnings: fixed gear is always down; flap setting is
+    // read off the airspeed the way a pilot would schedule it; the warning
+    // line speaks only when something is actually wrong.
+    const flaps = plane.speed<40 ? 'FULL' : plane.speed<56 ? 'APPROACH' : 'CRUISE';
+    el.gearmsg.textContent = 'GEAR DN · FLAPS '+flaps;
+    const agl = plane.pos[1]-Terrain.heightAt(plane.pos[0], plane.pos[2]);
+    el.warnline.textContent =
+      Fuel.s.pct<25 ? (tick%70<42 ? '⚠ LOW FUEL — LAND SOON' : '') :
+      (plane.speed<30 && agl>6) ? '⚠ STALL — NOSE DOWN' : '';
     const S = Missions.state, mid = Missions.current.id;
     const runwayDist = Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)));
     if (mid==='survey'){

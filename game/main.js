@@ -24,20 +24,23 @@ function terrainHit(){
       flashMsg='PATIENT ABOARD — FLY TO THE HOSPITAL PAD'; flashUntil=tick+210; AudioSys.chime();
       return false;
     }
-    if (pad && pad.result==='delivered'){ finishSortie('landed', pad.why); return true; }
+    if (pad && pad.result==='delivered'){ finishSortie('landed', pad.why, pad); return true; }
     if (pad && pad.result==='crash'){ finishSortie('crash', pad.why); Damage.hit(65,'PAD IMPACT'); return true; }
     const land = Missions.checkLanding(plane, g);
-    if (land && land.result==='landed'){ finishSortie('landed', land.why); return true; }
-    if (land && land.result==='landed-early'){ finishSortie('landed', land.why); return true; }
+    if (land && land.result==='landed'){ finishSortie('landed', land.why, land); return true; }
+    if (land && land.result==='landed-early'){ finishSortie('landed', land.why, land); return true; }
     finishSortie('crash', land? land.why : 'TERRAIN IMPACT AT '+Math.round(plane.speed)+' KT');
     Damage.hit(65,'TERRAIN IMPACT'); return true;
   }
   return false;
 }
-function finishSortie(kind, why){
+const bestMedals = {}; // mission id -> best medal this session, shown on the title screen
+function finishSortie(kind, why, touchInfo){
   screen = (kind==='landed') ? 'landed' : 'crash';
   Missions.state.landed = (kind==='landed');
   Missions.state.finishedTick = tick;
+  resultsData.grade = touchInfo && touchInfo.grade ? touchInfo.grade : (kind==='landed' ? 'FIRM' : null);
+  resultsData.touch = touchInfo && touchInfo.touch ? touchInfo.touch : '';
   resultsData.time = ((tick-sortieStartTick)/60).toFixed(1);
   resultsData.fuel = Fuel.s.pct.toFixed(0);
   resultsData.rings = Missions.state.ringsPassed;
@@ -47,15 +50,33 @@ function finishSortie(kind, why){
     : 'PATIENT <b>'+(Missions.state.patient?'DELIVERED':'NOT REACHED')+'</b> · CLOCK <b>'+Missions.fmtClock(Missions.state.timeLeft)+' LEFT</b>';
   resultsData.why = why;
   resultsData.score = Missions.score(Fuel.s.pct, Damage.s.pct, tick-sortieStartTick);
+  resultsData.medal = Missions.medalFor(resultsData.score, resultsData.grade, kind==='landed' && resultsData.grade!=='MISSED');
+  if (resultsData.medal){
+    const rank = {BRONZE:1, SILVER:2, GOLD:3};
+    const prev = bestMedals[Missions.current.id];
+    if (!prev || rank[resultsData.medal] > rank[prev]) bestMedals[Missions.current.id] = resultsData.medal;
+  }
   showScreen();
 }
 function showScreen(){
   document.getElementById('title-screen').style.display = screen==='title'?'flex':'none';
+  if (screen==='title'){
+    document.getElementById('medals-line').textContent =
+      'MEDALS THIS SESSION — SURVEY '+(bestMedals.survey?'★ '+bestMedals.survey:'—')+
+      ' · SCOOP & DROP '+(bestMedals.fire?'★ '+bestMedals.fire:'—')+
+      ' · MEDEVAC '+(bestMedals.medevac?'★ '+bestMedals.medevac:'—');
+  }
   document.getElementById('end-screen').style.display = (screen==='results'||screen==='landed'||screen==='crash')?'flex':'none';
   if (screen==='landed'||screen==='crash'||screen==='results'){
     document.getElementById('end-title').textContent =
       screen==='landed' ? 'SORTIE COMPLETE — LANDED' : screen==='crash' ? 'CRASHED' : 'SORTIE RESULTS';
+    const gradeLine = resultsData.grade
+      ? '<div class="grade grade-'+resultsData.grade.toLowerCase()+'">TOUCHDOWN: '+resultsData.grade+
+        (resultsData.touch ? ' <span class="touch">('+resultsData.touch+')</span>' : '')+'</div>' : '';
+    const medalLine = resultsData.medal
+      ? '<div class="medal medal-'+resultsData.medal.toLowerCase()+'">★ '+resultsData.medal+' MEDAL — '+Missions.current.name+'</div>' : '';
     document.getElementById('end-stats').innerHTML =
+      gradeLine + medalLine +
       '<div>TIME <b>'+resultsData.time+' S</b></div><div>'+resultsData.detail+'</div>'+
       '<div>FUEL LEFT <b>'+resultsData.fuel+'%</b></div><div>DAMAGE <b>'+Damage.s.pct.toFixed(0)+'%</b></div>'+
       '<div>SCORE <b>'+resultsData.score+'</b></div><p class="why">'+resultsData.why+'</p>';
@@ -158,6 +179,7 @@ function applyPreset(name){
   else if (name==='results'){ applyPresetSilent(); screen='results';
     resultsData.time='118.4'; resultsData.fuel='31'; resultsData.rings=6;
     resultsData.detail='RINGS <b>6 / 6</b>';
+    resultsData.grade='SMOOTH'; resultsData.touch='34 KT · SINK 1.8 M/S'; resultsData.medal='GOLD';
     resultsData.why='CLEAN TOUCHDOWN — ALL 6 RINGS, VALLEY SURVEY COMPLETE';
     Missions.state.ringsPassed=6; Missions.state.landed=true; resultsData.score=Missions.score(31,18,118.4*60); showScreen(); }
   else if (name==='title'){ screen='title'; }

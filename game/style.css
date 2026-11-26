@@ -39,3 +39,13 @@
 .keys{font-size:15px;color:#b9d9f5}
 #end-stats{font-size:26px;line-height:1.6}
 #end-stats .why{font-size:20px;color:#ffd23f;max-width:700px}
+#end-stats .grade{font-size:34px;font-weight:bold;letter-spacing:1px}
+#end-stats .grade .touch{font-size:21px;color:#cfe8ff}
+#end-stats .grade-smooth{color:#5cff8a}
+#end-stats .grade-firm{color:#ffb020}
+#end-stats .grade-missed{color:#ff7a5c}
+#end-stats .medal{font-size:27px;font-weight:bold;margin:2px 0 6px}
+#end-stats .medal-gold{color:#ffd23f}
+#end-stats .medal-silver{color:#dfe8f2}
+#end-stats .medal-bronze{color:#e09a5c}
+#warnline{font-size:15px;font-weight:bold;color:#ff4444;margin-top:5px;min-height:18px}

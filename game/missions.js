@@ -84,6 +84,14 @@ const Missions = (() => {
   }
   // Is the plane on this pad, gently? Used by main.js when ground contact happens.
   function onPad(plane, pad){ return Math.hypot(plane.pos[0]-pad.x, plane.pos[2]-pad.z) < pad.r; }
+  // Touchdown grading, judged at the moment of contact: SMOOTH is slow and
+  // gentle, FIRM is legal but rough, and anything past the legal limits has
+  // already been called a crash by the checks below.
+  function gradeTouch(plane){
+    const speed=Math.round(plane.speed), sink=Math.abs(plane.vy);
+    const grade = (speed<=38 && sink<=2.5) ? 'SMOOTH' : 'FIRM';
+    return { grade, touch: speed+' KT · SINK '+sink.toFixed(1)+' M/S' };
+  }
   function padTouch(plane, groundY){
     if (current.id!=='medevac') return null;
     const gentle = plane.speed<46 && Math.abs(plane.vy)<=7.5;
@@ -94,7 +102,7 @@ const Missions = (() => {
     }
     if (state.stage==='deliver' && onPad(plane, HOSPITAL_PAD)){
       if (!gentle) return {result:'crash', why:'HARD ARRIVAL AT THE HOSPITAL PAD'};
-      return {result:'delivered', why:'PATIENT DELIVERED — ' + fmtClock(state.timeLeft) + ' TO SPARE'};
+      return {result:'delivered', why:'PATIENT DELIVERED — ' + fmtClock(state.timeLeft) + ' TO SPARE', ...gradeTouch(plane)};
     }
     return null;
   }
@@ -106,10 +114,20 @@ const Missions = (() => {
     if (agl<3.2){
       if (plane.speed>46) return {result:'crash', why:'TOO FAST ON TOUCHDOWN — '+Math.round(plane.speed)+' KT'};
       if (Math.abs(plane.vy)>7.5) return {result:'crash', why:'HARD IMPACT — SINK '+Math.abs(plane.vy).toFixed(1)+' M/S'};
-      if (current.id==='survey' && state.ringsPassed<6) return {result:'landed-early', why:'LANDED BEFORE ALL 6 RINGS'};
-      if (current.id==='fire' && state.stage!=='land') return {result:'landed-early', why:'LANDED WITH THE FIRE STILL BURNING'};
-      return {result:'landed', why:'CLEAN TOUCHDOWN'};
+      if (current.id==='survey' && state.ringsPassed<6) return {result:'landed-early', why:'LANDED BEFORE ALL 6 RINGS', grade:'MISSED', touch:gradeTouch(plane).touch};
+      if (current.id==='fire' && state.stage!=='land') return {result:'landed-early', why:'LANDED WITH THE FIRE STILL BURNING', grade:'MISSED', touch:gradeTouch(plane).touch};
+      return {result:'landed', why:'CLEAN TOUCHDOWN', ...gradeTouch(plane)};
     }
+    return null;
+  }
+  // One medal per sortie, hung on the results screen: GOLD needs a smooth
+  // touchdown and a strong score, SILVER any completed landing, BRONZE a
+  // safe arrival that missed the brief.
+  const GOLD_SCORE = { survey:1100, fire:1050, medevac:1000 };
+  function medalFor(scoreValue, grade, completed){
+    if (completed && grade==='SMOOTH' && scoreValue>=GOLD_SCORE[current.id]) return 'GOLD';
+    if (completed) return 'SILVER';
+    if (grade==='MISSED') return 'BRONZE';
     return null;
   }
   function score(fuelLeft, damage, ticks){
@@ -134,5 +152,5 @@ const Missions = (() => {
   }
   reset();
   return {LIST, rings, state, FIRE, LAKE, PICKUP_PAD, HOSPITAL_PAD,
-    get current(){ return current; }, select, reset, nextRing, update, padTouch, checkLanding, score, buildRingMesh, fmtClock};
+    get current(){ return current; }, select, reset, nextRing, update, padTouch, checkLanding, score, medalFor, buildRingMesh, fmtClock};
 })();
