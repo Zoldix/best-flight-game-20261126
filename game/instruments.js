@@ -86,10 +86,11 @@ const Instruments = (() => {
     c.moveTo(W/2-38,H/2); c.lineTo(W/2-10,H/2); c.lineTo(W/2,H/2+8); c.lineTo(W/2+10,H/2); c.lineTo(W/2+38,H/2); c.stroke();
     c.fillStyle='#ffd23f'; c.beginPath(); c.arc(W/2,H/2,3.5,0,Math.PI*2); c.fill();
   }
-  // North-up minimap: the whole valley on 168x168 px. World x -1250..1250
-  // maps left..right, world z 350..-6450 maps bottom..top (north is up).
+  // North-up minimap: the whole valley on 128x128 px (v2: smaller, so the
+  // right-hand column ends clear of the ATTITUDE panel in every frame).
+  // World x -1250..1250 maps left..right, world z 350..-6450 bottom..top.
   function drawMinimap(plane){
-    const c=el.map, S=168;
+    const c=el.map, S=128;
     const mx=x=>(x+1250)/2500*S, mz=z=>(350-z)/6800*S;
     c.clearRect(0,0,S,S);
     c.fillStyle='#0d2b1d'; c.fillRect(0,0,S,S);

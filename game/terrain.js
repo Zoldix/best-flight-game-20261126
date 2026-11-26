@@ -17,7 +17,10 @@ const Terrain = (() => {
   // runway so the strip and its final approach stay straight and level.
   function valleyBend(z){ const f = z<-4600 ? Math.max(0, 1-(-z-4600)/500) : 1;
     return (150*Math.sin(z*0.00052)+80*Math.sin(z*0.00127+1.7)) * f; }
-  function riverX(z){ return valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037); }
+  function riverX(z){ const base = valleyBend(z)*0.55 + 90*Math.sin(z*0.0011)+40*Math.sin(z*0.00037);
+    // Past the strip (z < -4900) the river swings west across the valley
+    // floor, so it crosses the cover poster's foreground below the runway.
+    return z<-4900 ? base - 175*Math.min(1,(-z-4900)/160) : base; }
   function river2X(z){ return 55 + 95*Math.sin(z*0.0021); } // the far reach, beyond the runway (v2: swings right across the view axis past the strip, so the winding river reads in the cover)
   function fbm(x,z){ return noise(x,z)*0.60 + noise(x*2.7,z*2.7)*0.28 + noise(x*6.3,z*6.3)*0.12; }
   // Full plateau |x|<100: every terrain grid vertex under the strip sits at
@@ -44,6 +47,9 @@ const Terrain = (() => {
     const lake = ((x-230)/190)**2 + ((z+3750)/230)**2;
     if (lake<1) h = Math.min(h, 2.0); // lake bed
     const rb = runwayBlend(x,z); if (rb>0) h = h*(1-rb)+10*rb;
+    // The west swing past the strip cuts its channel through the apron edge
+    // as well, or the plateau blend would bury this reach of the river.
+    if (z<-4900 && z>-5200 && Math.abs(x-riverX(z))<40) h = Math.min(h, 1.5);
     if (z<-5760 && z>-6180 && Math.abs(x-river2X(z))<42) h = Math.min(h, 2.0); // far river channel
     // Medevac pads sit dead flat: the clearing pad at the valley floor's own
     // height, the hospital pad at airfield height beside the strip.
@@ -66,9 +72,9 @@ const Terrain = (() => {
   }
   function colorAt(x,z,h,seedKey){
     const rd=Math.abs(x-riverX(z));
-    if (z>-4900 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
-    if (z>-4900 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
-    if (z>-4900 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
+    if (z>-5200 && rd<20 && Math.abs(x)<340 && h<4) return [0.12,0.42,0.80];       // river water
+    if (z>-5200 && rd<42 && Math.abs(x)<340 && h<6) return [0.72,0.60,0.40];       // inner bank
+    if (z>-5200 && rd<58 && Math.abs(x)<340 && h<8) return [0.78,0.66,0.44];       // outer bank
     const lake=((x-230)/190)**2+((z+3750)/230)**2;
     if (lake<0.82 && h<4) return [0.12,0.44,0.82];                                   // lake water
     if (lake<1.15 && h<8) return [0.78,0.66,0.44];                                   // lake shore
@@ -87,7 +93,7 @@ const Terrain = (() => {
     }
     // The river is a ribbon mesh that follows the curve, bank under water, so
     // it reads as a winding river instead of painted squares.
-    for(let z=300; z>-4860; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
+    for(let z=300; z>-5200; z-=40){ const cx=riverX(z), cx2=riverX(z-40);
       const bank=[0.72,0.60,0.40], water=[0.12,0.42,0.80], wy=2.6;
       b.quad([cx-26,wy-0.5,z],[cx2-26,wy-0.5,z-40],[cx2+26,wy-0.5,z-40],[cx+26,wy-0.5,z],bank);
       b.quad([cx-15,wy,z],[cx2-15,wy,z-40],[cx2+15,wy,z-40],[cx+15,wy,z],water);
@@ -149,12 +155,15 @@ const Terrain = (() => {
         b.tri([fx,gy+0.25,fz],[fx+Math.cos(a1)*52,gy+0.25,fz+Math.sin(a1)*52],[fx+Math.cos(a2)*52,gy+0.25,fz+Math.sin(a2)*52],[0.16,0.13,0.11]); } }
     // ---- medevac pads: dark disc, white cross, amber corner lights ----
     function pad(cx,cz){
+      // v2: a bigger disc and cross (r 40, arms 20) — the original r 26 pad
+      // read as a sliver from any chase-camera final and hid behind the
+      // tailplane; the landing check itself still uses the mission radius.
       const gy=heightAt(cx,cz), SEG2=20;
       for(let i=0;i<SEG2;i++){ const a1=i/SEG2*Math.PI*2, a2=(i+1)/SEG2*Math.PI*2;
-        b.tri([cx,gy+0.3,cz],[cx+Math.cos(a1)*26,gy+0.3,cz+Math.sin(a1)*26],[cx+Math.cos(a2)*26,gy+0.3,cz+Math.sin(a2)*26],[0.13,0.14,0.17]); }
-      b.quad([cx-3,gy+0.45,cz-13],[cx-3,gy+0.45,cz+13],[cx+3,gy+0.45,cz+13],[cx+3,gy+0.45,cz-13],[0.95,0.95,0.92]);
-      b.quad([cx-13,gy+0.45,cz-3],[cx-13,gy+0.45,cz+3],[cx+13,gy+0.45,cz+3],[cx+13,gy+0.45,cz-3],[0.95,0.95,0.92]);
-      for(const [ox,oz] of [[-24,-24],[24,-24],[-24,24],[24,24]]) b.box(cx+ox,gy+1.2,cz+oz,2.2,2.2,2.2,[1.0,0.80,0.30]);
+        b.tri([cx,gy+0.3,cz],[cx+Math.cos(a1)*40,gy+0.3,cz+Math.sin(a1)*40],[cx+Math.cos(a2)*40,gy+0.3,cz+Math.sin(a2)*40],[0.13,0.14,0.17]); }
+      b.quad([cx-4.5,gy+0.45,cz-20],[cx-4.5,gy+0.45,cz+20],[cx+4.5,gy+0.45,cz+20],[cx+4.5,gy+0.45,cz-20],[0.95,0.95,0.92]);
+      b.quad([cx-20,gy+0.45,cz-4.5],[cx-20,gy+0.45,cz+4.5],[cx+20,gy+0.45,cz+4.5],[cx+20,gy+0.45,cz-4.5],[0.95,0.95,0.92]);
+      for(const [ox,oz] of [[-36,-36],[36,-36],[-36,36],[36,36]]) b.box(cx+ox,gy+1.2,cz+oz,2.6,2.6,2.6,[1.0,0.80,0.30]);
     }
     pad(330,-1400);   // clearing pickup pad
     pad(150,-5400);   // hospital helipad, beside the strip

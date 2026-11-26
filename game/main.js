@@ -171,7 +171,7 @@ function frame(){
 // ---- demo / seed presets for deterministic screenshots ----
 function applyPreset(name){
   if (name==='cover'||name==='runway'||name==='results'||name==='title') Missions.select('survey');
-  if (name==='cover'){ plane.pos=[10,168,-4360]; plane.heading=-0.01; plane.pitch=0.06; plane.speed=60; plane.throttle=0.50;
+  if (name==='cover'){ plane.pos=[6,140,-4780]; plane.heading=-0.01; plane.pitch=0.0; plane.speed=60; plane.throttle=0.50;
     for(let i=0;i<5;i++) Missions.rings[i].passed=true; Missions.state.ringsPassed=5;
     Fuel.set(54); Damage.set(9); screen='fly';
     // Poster treatment: closer chase camera (bigger plane), enlarged HUD
@@ -189,6 +189,9 @@ function applyPreset(name){
     Missions.state.ringsPassed=6; Missions.state.landed=true; resultsData.score=Missions.score(31,18,118.4*60); showScreen(); }
   else if (name==='title'){ screen='title'; }
   else if (name==='fire'){ Missions.select('fire'); Missions.state.stage='drop'; Missions.state.water=100;
+    Camera.setDist(22); // posed wide for the screenshot: the plane reads
+    // smaller against the valley than in the v1 frame (presets are posing
+    // only; a real sortie always starts at the default chase distance)
     plane.pos=[-350,120,-2350]; plane.heading=0.35; plane.pitch=-0.03; plane.speed=58; plane.throttle=0.5;
     Fuel.set(61); Damage.set(4); screen='fly'; }
   else if (name==='medevac'){ Missions.select('medevac'); Missions.state.stage='deliver'; Missions.state.patient=true;

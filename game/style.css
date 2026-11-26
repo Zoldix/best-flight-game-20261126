@@ -11,7 +11,7 @@
 /* The three right-side readouts live in one flex column, so the stack can
    never overlap: the VALLEY MAP panel always starts below the HEADING line,
    however tall the readout panels grow (poster mode included). */
-#right-col{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+#right-col{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
 #left-panel{position:static;text-align:right}
 #right-panel{position:static;text-align:right}
 .label{font-size:13px;letter-spacing:2px;color:#8fd0ff}
