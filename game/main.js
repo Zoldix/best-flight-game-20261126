@@ -44,9 +44,10 @@ function finishSortie(kind, why, touchInfo){
   resultsData.time = ((tick-sortieStartTick)/60).toFixed(1);
   resultsData.fuel = Fuel.s.pct.toFixed(0);
   resultsData.rings = Missions.state.ringsPassed;
-  const mid = Missions.current.id;
-  resultsData.detail = mid==='survey' ? 'RINGS <b>'+resultsData.rings+' / 6</b>'
-    : mid==='fire' ? 'DROPS <b>'+Missions.state.drops+' / 2</b> · FIRE <b>'+Math.max(0,Missions.FIRE.hp)+'% LEFT</b>'
+  const mid = Missions.current.id, mkind = Missions.current.kind;
+  resultsData.detail = mkind==='rings' ? 'GATES <b>'+resultsData.rings+' / '+Missions.rings.length+'</b>'
+    : mkind==='fire' ? 'DROPS <b>'+Missions.state.drops+' / 2</b> · FIRE <b>'+Math.max(0,Missions.FIRE.hp)+'% LEFT</b>'
+    : mkind==='cargo' ? 'CARGO <b>'+(Missions.state.stage==='land'?'DELIVERED TO THE FARMSTEAD':'NOT DELIVERED')+'</b>'
     : 'PATIENT <b>'+(Missions.state.patient?'DELIVERED':'NOT REACHED')+'</b> · CLOCK <b>'+Missions.fmtClock(Missions.state.timeLeft)+' LEFT</b>';
   resultsData.why = why;
   resultsData.score = Missions.score(Fuel.s.pct, Damage.s.pct, tick-sortieStartTick);
@@ -55,16 +56,46 @@ function finishSortie(kind, why, touchInfo){
     const rank = {BRONZE:1, SILVER:2, GOLD:3};
     const prev = bestMedals[Missions.current.id];
     if (!prev || rank[resultsData.medal] > rank[prev]) bestMedals[Missions.current.id] = resultsData.medal;
+    Progress.award(resultsData.medal);
+    Progress.session.medaledSorties[mid] = true;
   }
+  // Feats, judged from this sortie's real outcome (v8): a completed sortie
+  // is a landing or a delivery, and each feat names the fact it rewards.
+  const completed = kind==='landed' && resultsData.grade!=='MISSED';
+  const newFeats = [];
+  const earn = id => { if (Progress.earn(id)) newFeats.push(Progress.FEATS.find(f=>f.id===id).name); };
+  if (completed){
+    Progress.session.completedSorties[mid] = true;
+    earn('firstwings');
+    if (resultsData.grade==='SMOOTH'){ Progress.session.smoothLandings++;
+      earn('smoothop');
+      if (Progress.session.smoothLandings>=3) earn('triplesmooth'); }
+    if (Damage.s.pct<5) earn('noscratch');
+    if (Fuel.s.pct>50) earn('fulltank');
+    if (mkind==='rings' && Missions.state.ringsPassed>=Missions.rings.length) earn('ringperfect');
+    if (mkind==='fire' && Missions.FIRE.hp<=0) earn('fireace');
+    if (mkind==='medevac' && Missions.state.patient) earn('lifesaver');
+    if (mid==='night') earn('nightowl');
+    if (mid==='cargo') earn('cargopro');
+    if (mid==='slalom') earn('slalomstar');
+    if (Object.keys(Progress.session.medaledSorties).length>=4) earn('veteran');
+  }
+  resultsData.newFeats = newFeats;
   showScreen();
 }
 function showScreen(){
   document.getElementById('title-screen').style.display = screen==='title'?'flex':'none';
   if (screen==='title'){
+    const parts = Missions.LIST.map(m=>m.short+' '+(bestMedals[m.id]?'★ '+bestMedals[m.id]:'—'));
     document.getElementById('medals-line').textContent =
-      'MEDALS THIS SESSION — SURVEY '+(bestMedals.survey?'★ '+bestMedals.survey:'—')+
-      ' · SCOOP & DROP '+(bestMedals.fire?'★ '+bestMedals.fire:'—')+
-      ' · MEDEVAC '+(bestMedals.medevac?'★ '+bestMedals.medevac:'—');
+      'MEDALS THIS SESSION — '+parts.join(' · ');
+    buildRefitCards();
+    const earned = Progress.featsEarned();
+    document.getElementById('feats-line').textContent =
+      'FEATS '+earned.length+' / '+Progress.FEATS.length+' — '+
+      (earned.length ? earned.map(f=>f.name).join(' · ') : 'NONE YET — FLY A SORTIE');
+    document.getElementById('points-line').textContent =
+      Progress.balance()+' MEDAL POINTS TO SPEND · '+Progress.session.points+' EARNED';
   }
   document.getElementById('end-screen').style.display = (screen==='results'||screen==='landed'||screen==='crash')?'flex':'none';
   if (screen==='landed'||screen==='crash'||screen==='results'){
@@ -75,11 +106,15 @@ function showScreen(){
         (resultsData.touch ? ' <span class="touch">('+resultsData.touch+')</span>' : '')+'</div>' : '';
     const medalLine = resultsData.medal
       ? '<div class="medal medal-'+resultsData.medal.toLowerCase()+'">★ '+resultsData.medal+' MEDAL — '+Missions.current.name+'</div>' : '';
+    const featsLine = (resultsData.newFeats && resultsData.newFeats.length)
+      ? '<div class="feats">★ NEW FEAT'+(resultsData.newFeats.length>1?'S':'')+': '+resultsData.newFeats.join(' · ')+'</div>' : '';
+    const featsTotal = '<div class="feats">FEATS '+Progress.featsEarned().length+' / '+Progress.FEATS.length+
+      ' · MEDAL POINTS '+Progress.balance()+' — SPEND THEM IN THE HANGAR (R, THEN THE TITLE SCREEN)</div>';
     document.getElementById('end-stats').innerHTML =
-      gradeLine + medalLine +
+      gradeLine + medalLine + featsLine +
       '<div>TIME <b>'+resultsData.time+' S</b></div><div>'+resultsData.detail+'</div>'+
       '<div>FUEL LEFT <b>'+resultsData.fuel+'%</b></div><div>DAMAGE <b>'+Damage.s.pct.toFixed(0)+'%</b></div>'+
-      '<div>SCORE <b>'+resultsData.score+'</b></div><p class="why">'+resultsData.why+'</p>';
+      '<div>SCORE <b>'+resultsData.score+'</b></div>'+featsTotal+'<p class="why">'+resultsData.why+'</p>';
   }
 }
 function startSortie(){
@@ -87,6 +122,7 @@ function startSortie(){
   plane.pos=[0,135,150]; plane.heading=0; plane.pitch=0; plane.roll=0;
   plane.speed=62; plane.throttle=0.62; plane.vy=0;
   Fuel.set(100); Damage.set(0);
+  document.body.classList.toggle('night', Missions.current.id==='night');
   Camera.reset(plane.pos);
   screen='fly'; sortieStartTick=tick; AudioSys.start(); showScreen();
 }
@@ -109,7 +145,7 @@ function step(){
   plane.heading += plane.roll * (plane.speed*0.00028) * (180/Math.PI) * 0.016 * 3.2;
   // physics: throttle sets a target speed, pitch trades speed for climb,
   // and below 30 KT the plane sinks (the stall)
-  const targetSpeed = 18 + plane.throttle*95;
+  const targetSpeed = 18 + plane.throttle*95 + Progress.speedBonus();
   plane.speed += (targetSpeed-plane.speed)*0.012 - plane.pitch*plane.speed*0.010;
   plane.speed = Math.max(14, Math.min(125, plane.speed));
   const climb = Math.sin(plane.pitch)*plane.speed*0.42 - (plane.speed<30? (30-plane.speed)*0.22 : 0);
@@ -125,11 +161,13 @@ function step(){
   Fuel.burn(plane, DT); AudioSys.setThrottle(plane.throttle);
   if (Fuel.s.pct<=0){ plane.throttle=0; if (plane.speed<20 && plane.pos[1]-Terrain.heightAt(plane.pos[0],plane.pos[2])<4) finishSortie('crash','OUT OF FUEL — FORCED LANDING'); }
   const ev = Missions.update(plane, tick-sortieStartTick);
-  if (ev && ev.event==='ring'){ flashMsg='RING '+ev.n+' / 6 CLEAR!'; flashUntil=tick+150; AudioSys.chime(); }
+  if (ev && ev.event==='ring'){ flashMsg='GATE '+ev.n+' / '+ev.total+' CLEAR!'; flashUntil=tick+150; AudioSys.chime(); }
   if (ev && ev.event==='scoop'){ flashMsg='TANK FULL — DROP IT ON THE FIRE'; flashUntil=tick+180; AudioSys.chime(); }
   if (ev && ev.event==='drop'){ flashMsg='DIRECT HIT — ONE MORE LOAD'; flashUntil=tick+180; AudioSys.chime(); }
   if (ev && ev.event==='fireout'){ flashMsg='FIRE OUT — LAND ON RUNWAY 27'; flashUntil=tick+210; AudioSys.chime(); }
-  if (ev && ev.event==='timeout'){ finishSortie('crash','OUT OF TIME — THE PATIENT DID NOT MAKE IT'); return; }
+  if (ev && ev.event==='cargoload'){ flashMsg='CRATES HOOKED — DROP THEM AT THE FARMSTEAD'; flashUntil=tick+180; AudioSys.chime(); }
+  if (ev && ev.event==='cargodrop'){ flashMsg='CARGO DELIVERED — LAND ON RUNWAY 27'; flashUntil=tick+210; AudioSys.chime(); }
+  if (ev && ev.event==='timeout'){ finishSortie('crash', Missions.current.kind==='medevac' ? 'OUT OF TIME — THE PATIENT DID NOT MAKE IT' : 'OUT OF TIME — THE GATES STAY UNFLOWN'); return; }
   if (terrainHit()) return;
 }
 function modelMatrix(){
@@ -184,16 +222,19 @@ function applyPreset(name){
     // flight model settles the bank out.
     document.body.classList.add('poster');
     Camera.setDist(20);
-    window.__flightPoster='3 SORTIES · SURVEY · FIRE · MEDEVAC'; }
+    window.__flightPoster='7 SORTIES · SURVEY · FIRE · MEDEVAC · NIGHT · CARGO · SLALOM'; }
   else if (name==='runway'){ plane.pos=[6,36,-4995]; plane.heading=-0.03; plane.pitch=-0.06; plane.speed=47; plane.throttle=0.30;
     for(const r of Missions.rings) r.passed=true; Missions.state.ringsPassed=6; Fuel.set(38); Damage.set(18); screen='fly'; }
   else if (name==='results'){ applyPresetSilent(); screen='results';
     resultsData.time='118.4'; resultsData.fuel='31'; resultsData.rings=6;
-    resultsData.detail='RINGS <b>6 / 6</b>';
+    resultsData.detail='GATES <b>6 / 6</b>';
     resultsData.grade='SMOOTH'; resultsData.touch='34 KT · SINK 1.8 M/S'; resultsData.medal='GOLD';
-    resultsData.why='CLEAN TOUCHDOWN — ALL 6 RINGS, VALLEY SURVEY COMPLETE';
+    resultsData.newFeats=['RING PERFECT','SMOOTH OPERATOR'];
+    Progress.session.points=3; // the GOLD just earned, as the screen reports it
+    Progress.earn('firstwings'); Progress.earn('ringperfect'); Progress.earn('smoothop');
+    resultsData.why='CLEAN TOUCHDOWN — ALL 6 GATES, VALLEY SURVEY COMPLETE';
     Missions.state.ringsPassed=6; Missions.state.landed=true; resultsData.score=Missions.score(31,18,118.4*60); showScreen(); }
-  else if (name==='title'){ screen='title'; }
+  else if (name==='menu'||name==='title'){ Progress.demo(); bestMedals.survey='GOLD'; bestMedals.fire='SILVER'; bestMedals.medevac='SILVER'; screen='title'; }
   else if (name==='fire'){ Missions.select('fire'); Missions.state.stage='drop'; Missions.state.water=100;
     Camera.setDist(22); // posed wide for the screenshot: the plane reads
     // smaller against the valley than in the v1 frame (presets are posing
@@ -221,7 +262,7 @@ function applyPreset(name){
   Camera.reset(plane.pos); showScreen();
 }
 function applyPresetSilent(){ plane.pos=[0,120,-4900]; plane.heading=0; plane.speed=48; Fuel.set(31); Damage.set(18); }
-window.__flight = { plane, step, renderFrame, applyPreset,
+window.__flight = { plane, step, renderFrame, applyPreset, Missions, Progress,
   get state(){ return {tick, screen, rings:Missions.state.ringsPassed, fuel:Fuel.s.pct, damage:Damage.s.pct,
     pos:[...plane.pos], speed:plane.speed}; } };
 // ---- mission select (title screen) ----
@@ -233,10 +274,27 @@ function buildMissionCards(){
     d.className='card'+(Missions.current.id===m.id?' sel':'');
     d.id='card-'+m.id;
     d.innerHTML='<div class="cnum">SORTIE '+(i+1)+'</div><div class="cname">'+m.name+'</div>'+
-      '<div class="csub">'+m.sub+'</div><p class="cbrief">'+m.brief+'</p>';
+      '<div class="csub">'+m.sub+'</div><p class="cbrief">'+m.brief+'</p><div class="cwho">'+m.who+'</div>';
     d.addEventListener('click', ()=>selectMission(m.id));
     wrap.appendChild(d);
   });
+}
+// ---- hangar (title screen): refit cards bought with medal points ----
+function buildRefitCards(){
+  const wrap=document.getElementById('refit-cards');
+  if (!wrap) return;
+  wrap.innerHTML='';
+  for (const r of Progress.REFITS){
+    const owned = !!Progress.session.owned[r.id];
+    const afford = Progress.balance() >= r.cost;
+    const d=document.createElement('div');
+    d.className='refit'+(owned?' owned':'')+(!owned && !afford?' locked':'');
+    d.innerHTML='<div class="rname">'+r.name+'</div>'+
+      '<div class="rcost">'+(owned?'✓ FITTED':'COST '+r.cost+' PTS')+'</div>'+
+      '<div class="rdesc">'+r.desc+'</div>';
+    if (!owned) d.addEventListener('click', ()=>{ if (Progress.buy(r.id)) showScreen(); });
+    wrap.appendChild(d);
+  }
 }
 function selectMission(id){
   Missions.select(id);
@@ -249,7 +307,7 @@ function boot(){
   Instruments.init();
   buildMissionCards();
   addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true;
-    if (screen==='title' && ['1','2','3'].includes(e.key)) selectMission(Missions.LIST[Number(e.key)-1].id);
+    if (screen==='title' && ['1','2','3','4','5','6','7'].includes(e.key)) selectMission(Missions.LIST[Number(e.key)-1].id);
     if ((e.key==='Enter'||e.key===' ') && screen==='title'){ e.preventDefault(); startSortie(); }
     if (e.key.toLowerCase()==='r' && (screen==='crash'||screen==='landed')) location.search='?seed='+SEED; });
   addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });

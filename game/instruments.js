@@ -61,20 +61,21 @@ const Instruments = (() => {
     el.warnline.textContent =
       Fuel.s.pct<25 ? (tick%70<42 ? '⚠ LOW FUEL — LAND SOON' : '') :
       (plane.speed<30 && agl>6) ? '⚠ STALL — NOSE DOWN' : '';
-    const S = Missions.state, mid = Missions.current.id;
+    const S = Missions.state, mid = Missions.current.id, kind = Missions.current.kind;
     const runwayDist = Math.max(0,Math.round(Math.abs(plane.pos[2]+5400)));
-    if (mid==='survey'){
-      const n = S.ringsPassed;
-      el.mission.textContent = 'VALLEY SURVEY — RING '+Math.min(6,n+(n<6?1:6))+' / 6';
+    if (kind==='rings'){
+      const n = S.ringsPassed, total = Missions.rings.length;
+      el.mission.textContent = Missions.current.name+' — GATE '+Math.min(total,n+(n<total?1:total))+' / '+total+
+        (mid==='slalom' ? ' · CLOCK '+Missions.fmtClock(S.timeLeft) : '');
       const nr = Missions.nextRing();
       if (nr){ const d=Math.hypot(plane.pos[0]-nr.x, plane.pos[2]-nr.z);
-        el.ringinfo.textContent='NEXT RING '+Math.round(d)+' M AHEAD';
+        el.ringinfo.textContent='NEXT GATE '+Math.round(d)+' M AHEAD';
         el.distinfo.textContent='RUNWAY '+runwayDist+' M NORTH';
-        el.callout.textContent = window.__flightPoster || (d<420 ? '► RING AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN RING');
-      } else { el.ringinfo.textContent='ALL RINGS CLEAR — LAND NOW';
+        el.callout.textContent = window.__flightPoster || (d<420 ? '► GATE AHEAD — LINE UP ◄' : 'FOLLOW THE GREEN GATE');
+      } else { el.ringinfo.textContent='ALL GATES CLEAR — LAND NOW';
         el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
         el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
-    } else if (mid==='fire'){
+    } else if (kind==='fire'){
       el.mission.textContent = 'SCOOP & DROP — '+(S.stage==='scoop'?'FILL THE TANK':S.stage==='drop'?'WATER AWAY ON THE FIRE':'FIRE OUT — LAND');
       if (S.stage==='scoop'){ const d=Math.hypot(plane.pos[0]-Missions.LAKE.x, plane.pos[2]-Missions.LAKE.z);
         el.ringinfo.textContent='LAKE '+Math.round(d)+' M — SKIM LOW & STEADY';
@@ -87,8 +88,18 @@ const Instruments = (() => {
       } else { el.ringinfo.textContent='ALL LOADS AWAY — FIRE OUT';
         el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
         el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄'; }
+    } else if (kind==='cargo'){
+      el.mission.textContent = 'CARGO DROP — '+(S.stage==='fetch'?'HOOK THE CRATES AT THE DEPOT':S.stage==='drop'?'CRATES ABOARD — DROP AT THE FARMSTEAD':'DELIVERED — LAND');
+      const zone = S.stage==='fetch' ? Missions.DEPOT : Missions.FARM;
+      const d=Math.hypot(plane.pos[0]-zone.x, plane.pos[2]-zone.z);
+      if (S.stage==='land'){ el.ringinfo.textContent='CARGO DELIVERED — BRAM IS HAPPY';
+        el.distinfo.textContent='RUNWAY '+runwayDist+' M — SLOW TO <46 KT';
+        el.callout.textContent='► RUNWAY AHEAD — GEAR DOWN, GENTLE SINK ◄';
+      } else { el.ringinfo.textContent=(S.stage==='fetch'?'DEPOT ':'FARMSTEAD ')+Math.round(d)+' M — FLY LOW OVER IT';
+        el.distinfo.textContent='CRATES '+(S.cargo?'ABOARD':'WAITING AT THE DEPOT');
+        el.callout.textContent = d<300 ? '► LOW AND STEADY — NOW ◄' : 'FOLLOW THE MAP TO THE '+(S.stage==='fetch'?'DEPOT':'FARMSTEAD'); }
     } else {
-      el.mission.textContent = 'MEDEVAC — '+(S.stage==='pickup'?'PICK UP THE PATIENT':'PATIENT ABOARD — DELIVER');
+      el.mission.textContent = Missions.current.name+' — '+(S.stage==='pickup'?'PICK UP THE PATIENT':'PATIENT ABOARD — DELIVER');
       const pad = S.stage==='pickup' ? Missions.PICKUP_PAD : Missions.HOSPITAL_PAD;
       const d=Math.hypot(plane.pos[0]-pad.x, plane.pos[2]-pad.z);
       el.ringinfo.textContent='CLOCK '+Missions.fmtClock(S.timeLeft)+(S.timeLeft<60?' — HURRY':'');
@@ -133,6 +144,9 @@ const Instruments = (() => {
     c.beginPath(); c.arc(mx(Missions.FIRE.x), mz(Missions.FIRE.z), 4, 0, Math.PI*2); c.fill();
     c.fillStyle='#ffffff';
     for (const p of [Missions.PICKUP_PAD, Missions.HOSPITAL_PAD]) c.fillRect(mx(p.x)-2.5, mz(p.z)-2.5, 5, 5);
+    // cargo zones: the depot (amber square) and the farmstead field (green square)
+    c.fillStyle='#ffb020'; c.fillRect(mx(Missions.DEPOT.x)-2.5, mz(Missions.DEPOT.z)-2.5, 5, 5);
+    c.fillStyle='#39ff6e'; c.fillRect(mx(Missions.FARM.x)-2.5, mz(Missions.FARM.z)-2.5, 5, 5);
     // rings: passed grey, next green, later gold
     Missions.rings.forEach((r,i)=>{
       c.fillStyle = r.passed ? '#7d8a99' : (i===Missions.state.ringsPassed ? '#39ff6e' : '#ffb020');

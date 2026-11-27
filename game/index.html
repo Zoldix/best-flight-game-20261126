@@ -12,7 +12,7 @@
     <div id="ringinfo">NEXT RING — M AHEAD</div>
     <div id="distinfo">RUNWAY — M NORTH</div>
     <div id="callout">FOLLOW THE GREEN RING</div>
-    <div class="legend">MAP: green dot = next ring · orange = fire · white square = pad · land &lt;46 KT</div>
+    <div class="legend">MAP: green dot = next gate · orange = fire · white square = pad · amber = depot · green square = farmstead · land &lt;46 KT</div>
   </div>
   <div id="right-col">
   <div class="panel" id="left-panel">
@@ -45,13 +45,19 @@
   </div>
   <div id="flash"></div>
 </div>
+<div id="night-tint"></div>
 <div id="title-screen" class="screen">
   <h1>SUNSET VALLEY AIR SERVICE</h1>
-  <p class="sub">THREE SORTIES · ONE VALLEY · ONE TANK OF FUEL EACH</p>
+  <p class="sub">SEVEN SORTIES · 17 STAGES · SIX REFITS · TWELVE FEATS · ONE VALLEY</p>
   <div id="mission-cards"></div>
+  <div id="hangar">
+    <div class="hangar-title">HANGAR — REFITS <span id="points-line">0 MEDAL POINTS</span></div>
+    <div id="refit-cards"></div>
+    <div id="feats-line">FEATS 0 / 12 — NONE YET</div>
+  </div>
   <button id="start-btn">▶ FLY SELECTED SORTIE — ENTER</button>
-  <p class="keys" id="medals-line">MEDALS THIS SESSION — SURVEY — · SCOOP &amp; DROP — · MEDEVAC —</p>
-  <p class="keys">Pick a sortie: click a card or press 1 · 2 · 3 — then ENTER to fly</p>
+  <p class="keys" id="medals-line">MEDALS THIS SESSION — NONE YET</p>
+  <p class="keys">Pick a sortie: click a card or press 1 – 7 — click a refit to buy it with medal points — then ENTER to fly</p>
   <p class="keys">W/↑ climb · S/↓ dive · A/D bank · SHIFT throttle up · C throttle down · mouse steers</p>
 </div>
 <div id="end-screen" class="screen" style="display:none">
@@ -62,6 +68,7 @@
 <script src="render.js"></script>
 <script src="terrain.js"></script>
 <script src="aircraft.js"></script>
+<script src="progress.js"></script>
 <script src="missions.js"></script>
 <script src="fuel.js"></script>
 <script src="damage.js"></script>

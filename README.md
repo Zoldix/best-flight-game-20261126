@@ -7,14 +7,32 @@
 Entry for the [make.fun competition "Make the best flight game"](https://make.fun/bounty/best-flight-game-20261126-0057) ($500, deadline 28 Nov 2026 07:57 WIB).
 
 A 3D chase-view flight game written in raw WebGL (own shaders, no library, no
-network). One sunset valley, three sorties, picked from the mission-select
-screen:
+network). One valley, **seven sorties, 17 stages**, picked from the
+mission-select screen:
 
 1. **Valley Survey** — thread six rings down the valley in order, then land.
 2. **Scoop & Drop** — skim the lake low to fill the water tank, drop two loads
    on the forest fire on the west slope, then land.
 3. **Medevac** — land on the clearing pad, take the patient aboard, and reach
    the hospital helipad before the 5:00 clock runs out.
+4. **Night Survey** — the survey course after dark, six lit rings.
+5. **Cargo Drop** — hook Bram's crates low over the depot, drop them on the
+   farmstead field, then land.
+6. **Slalom Gates** — eight tight gates against a 2:30 clock.
+7. **Second Patient** — Tomas Ilo waits on the west pad; deliver him inside
+   four minutes.
+
+Every brief is spoken by one of the valley's crew — tower controller **Mara
+Voss**, fire chief **Dana Okafor**, depot keeper **Bram Kessler**, and the
+patients **Elias Ren** and **Tomas Ilo**. Medals (GOLD / SILVER / BRONZE per
+sortie) pay **medal points**, and the title-screen **hangar** sells **six
+refits** for those points — Aux Tank, Tuned Prop, Light Frame, Wide Scoops,
+Stretcher Rig, Survey Lens — each changing a number the flight model really
+reads (fuel burn, top speed, damage taken, drop power, medevac clock, ring
+capture radius). **Twelve named feats** (First Wings, Smooth Operator,
+Triple Smooth, No-Scratch, Full-Tank Finisher, Ring Perfect, Fire Ace,
+Lifesaver, Night Owl, Cargo Pro, Slalom Star, Valley Veteran) are tracked
+across the session and shown on the title and results screens.
 
 Every landing is on the marked runway "27" — centreline dashes, threshold
 piano bars, touchdown bars, edge lights — or on a marked pad, slower than
@@ -25,7 +43,7 @@ gradient sunset sky.
 
 ## How to play
 
-- **1 / 2 / 3 or click** — pick a sortie · **Enter** — fly it · **R** — fly again
+- **1 – 7 or click** — pick a sortie · **click a refit** — buy it in the hangar · **Enter** — fly it · **R** — fly again
 - **W / ↑** climb · **S / ↓** dive · **A / D** bank and turn
 - **Shift / C** — throttle up / down · **mouse** — steer
 - Finish the sortie's job, land under 46 KT with a gentle sink, earn the medal
